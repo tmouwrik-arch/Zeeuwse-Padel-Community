@@ -1355,7 +1355,7 @@ function Spinner(){ return <div style={{textAlign:"center",padding:"28px 0"}}><d
 const s: Record<string,any> = {
   // BREEDTE FIX: appShell is volledig breed, content is altijd max 430 gecentreerd
   appShell:{fontFamily:"'Nunito',sans-serif",background:C.bg,minHeight:"100dvh",width:"100%",overflowX:"hidden"},
-  mainWrap:{maxWidth:APP_MAX_W,margin:"0 auto",paddingTop: "calc(95px + env(safe-area-inset-top))",paddingBottom: 80},
+  mainWrap:{maxWidth:APP_MAX_W,margin:"0 auto",paddingTop: "calc(95px + env(safe-area-inset-top))",paddingBottom: 100},
   // Header: fixed + full width, content gecentreerd binnen
   header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:100,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"max(15px + env(safe-area-inset-top))"},
   // Backheader voor subschermen (ook full width)
@@ -1368,7 +1368,7 @@ const s: Record<string,any> = {
   badge:{position:"absolute",top:-3,right:-3,background:"#ef4444",color:"#fff",fontSize:9,width:16,height:16,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700},
   // Nav: fixed + full width, content gecentreerd
   nav:{position:"fixed",bottom:0,left:0,right:0,background:"#fff",boxShadow:"0 -2px 20px rgba(0,0,0,0.08)",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)"},
-  navInner:{display:"flex",maxWidth:APP_MAX_W,margin:"0 auto",height: "60px",alignItems: "center",},
+  navInner:{display:"flex",maxWidth:APP_MAX_W,margin:"0 auto",height: "70px",alignItems: "center",},
   navBtn:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"8px 2px 6px",background:"none",border:"none",cursor:"pointer",gap:3,minWidth:0,overflow:"hidden",position:"relative"},
   navIndicator:{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:24,height:3,background:C.sea,borderRadius:"0 0 4px 4px"},
   navCreate:{width:46,height:46,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px rgba(14,165,233,0.45)",marginTop:-12,marginBottom:2},
