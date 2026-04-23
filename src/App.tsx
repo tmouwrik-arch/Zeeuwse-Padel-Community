@@ -1448,8 +1448,7 @@ const css=`
   .inp-sm:focus{border-color:#0ea5e9;}
   .btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;}
   .btn-primary:disabled{opacity:.45;cursor:not-allowed;}
-  .btn-auth{width:100%;padding:15px;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;}
-  .btn-auth:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-auth{width:100%;padding:20px;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;border-radius:14px;font-size:18px;font-weight:800;cursor:pointer;font-family:inherit;}  .btn-auth:disabled{opacity:.4;cursor:not-allowed;}
   .btn-auth-outline{flex:1;padding:13px;background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;font-size:14px;font-weight:700;color:#64748b;cursor:pointer;font-family:inherit;}
   .btn-secondary{width:100%;padding:12px;background:#f0f9ff;border:1.5px solid #0ea5e9;border-radius:12px;font-size:14px;font-weight:700;color:#0ea5e9;cursor:pointer;font-family:inherit;}
   .btn-join{padding:7px 14px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
