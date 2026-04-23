@@ -1368,7 +1368,7 @@ const s: Record<string,any> = {
   badge:{position:"absolute",top:-3,right:-3,background:"#ef4444",color:"#fff",fontSize:9,width:16,height:16,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700},
   // Nav: fixed + full width, content gecentreerd
   nav:{position:"fixed",bottom:0,left:0,right:0,background:"#fff",boxShadow:"0 -2px 20px rgba(0,0,0,0.08)",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)"},
-  navInner:{display:"flex",maxWidth:APP_MAX_W,margin:"0 auto",height: "70px",alignItems: "center",},
+  navInner:{display:"flex",maxWidth:APP_MAX_W,margin:"0 auto",height: "65px",alignItems: "center",},
   navBtn:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"8px 2px 6px",background:"none",border:"none",cursor:"pointer",gap:3,minWidth:0,overflow:"hidden",position:"relative"},
   navIndicator:{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:24,height:3,background:C.sea,borderRadius:"0 0 4px 4px"},
   navCreate:{width:46,height:46,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px rgba(14,165,233,0.45)",marginTop:-12,marginBottom:2},
@@ -1421,10 +1421,32 @@ const s: Record<string,any> = {
 
 const css=`
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+  
+  /* --- iOS FIXES VOOR VOLLEDIG SCHERM --- */
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: #f0f9ff;
+    overflow-x: hidden;
+    /* Dwingt de iPhone om de app als een vast blok te zien */
+    position: fixed; 
+    width: 100%;
+    /* Zorgt voor soepel scrollen binnen de app */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
+
+  #root {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;background:#f0f9ff;overflow-x:hidden;}
-  #root{height:100%;}
-  /* Auth invoerveld – flex, nooit overlappend */
+
+  /* --- BESTAANDE STIJLEN (NIETS VERWIJDERD) --- */
   .auth-field-wrap:focus-within{border-color:#0ea5e9 !important;background:#fff !important;}
   .auth-bare{flex:1;border:none;background:transparent;outline:none;padding:13px 0;font-size:14px;font-family:inherit;color:#1e293b;min-width:0;}
   .auth-bare::placeholder{color:#94a3b8;}
