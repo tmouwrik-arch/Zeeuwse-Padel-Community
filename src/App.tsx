@@ -1422,29 +1422,32 @@ const s: Record<string,any> = {
 const css=`
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
   
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-
-  html, body {
+  html {
     height: 100%;
-    width: 100%;
+    /* Tijdelijk rood om te debuggen: */
+    background-color: red; 
+  }
+
+  body {
+    height: 100%;
     margin: 0;
     padding: 0;
     background: #f0f9ff;
-    /* Zorgt dat de pagina niet kan 'bouncen' aan de onderkant */
-    overflow: hidden; 
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
   }
 
   #root {
     height: 100%;
-    width: 100%;
     display: flex;
     flex-direction: column;
-    overflow-y: auto; /* Alleen scrollen binnen de app-container */
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-
+  
   .auth-field-wrap:focus-within{border-color:#0ea5e9 !important;background:#fff !important;}
   .auth-bare{flex:1;border:none;background:transparent;outline:none;padding:13px 0;font-size:14px;font-family:inherit;color:#1e293b;min-width:0;}
   .auth-bare::placeholder{color:#94a3b8;}
