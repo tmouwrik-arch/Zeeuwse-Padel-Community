@@ -1385,7 +1385,7 @@ const s: Record<string,any> = {
   navCreate:{width:46,height:46,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px rgba(14,165,233,0.45)",marginTop:-12,marginBottom:2},
   navLbl:{fontSize:10,whiteSpace:"nowrap"},
   overlay:{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:200,display:"flex",alignItems:"flex-start",justifyContent:"flex-end"},
-  notifPanel:{background:"#fff",width:"min(300px,90vw)",maxHeight:"80dvh",overflowY:"auto",marginTop:66,marginRight:8,borderRadius:14,boxShadow:"0 8px 30px rgba(0,0,0,.2)"},
+  notifPanel:{background:"#fff",width:"min(300px,90vw)",maxHeight:"80dvh",overflowY:"auto",marginTop:90,marginRight:8,borderRadius:14,boxShadow:"0 8px 30px rgba(0,0,0,.2)"},
   notifHead:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",borderBottom:"1px solid #e2e8f0"},
   modalCard:{background:"#fff",width:"min(390px,94vw)",maxHeight:"90dvh",overflowY:"auto",margin:"auto",borderRadius:20,padding:"18px 16px",boxShadow:"0 20px 60px rgba(0,0,0,.3)"},
   closeBtn:{background:"none",border:"none",cursor:"pointer",color:C.sub,padding:"0 2px",display:"flex",alignItems:"center"},
