@@ -493,14 +493,18 @@ function Header({profile,unread,onBell,onProfile}:any){
       <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           {/* Eigen logo afbeelding */}
-          <div style={{width:36,height:36,borderRadius:10,overflow:"hidden",background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <img src="/Gemini_Generated_Image_jjvfrsjjvfrsjjvf.png" alt="Logo" style={{width:36,height:36,objectFit:"contain",filter:"brightness(0) invert(1)"}}
-              onError={(e:any)=>{
-                // Fallback: toon SVG padel logo
-                e.target.style.display="none";
-                e.target.parentNode.innerHTML='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M3 12 Q12 7 21 12"/><path d="M3 12 Q12 17 21 12"/></svg>';
-              }}/>
-          </div>
+<div style={{width: 40, height: 40, borderRadius: 10, overflow: "hidden", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0}}>
+  <img 
+    src="/Logo.png" 
+    alt="Logo" 
+    style={{width: "100%", height: "100%", objectFit: "contain"}}
+    onError={(e:any)=>{
+      // Fallback: toon SVG padel logo
+      e.target.style.display="none";
+      e.target.parentNode.innerHTML='<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M3 12 Q12 7 21 12"/><path d="M3 12 Q12 17 21 12"/></svg>';
+    }}
+  />
+</div>
           <div><div style={{color:"#fff",fontWeight:800,fontSize:15,lineHeight:1}}>Zeeuwse Padel</div><div style={{color:"rgba(255,255,255,0.7)",fontSize:10,fontWeight:600}}>Community</div></div>
         </div>
         <div style={{display:"flex",gap:10,alignItems:"center"}}>
