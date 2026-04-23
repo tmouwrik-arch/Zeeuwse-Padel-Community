@@ -558,7 +558,7 @@ function LoginScreen({onLogin,onSwitch,onForgot}:any){
         <div style={{textAlign:"center"}}>
           <div style={{width:70,height:70,borderRadius:20,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px",boxShadow:"0 8px 24px rgba(14,165,233,.4)"}}><PadelLogo size={46}/></div>
           <h1 style={s.authTitle}>Zeeuwse Padel</h1>
-          <p style={s.authSub}>Speel mee met spelers in Zeeland</p>
+          <p style={s.authSub}>Speel met spelers in heel Zeeland</p>
         </div>
         {!forgotMode?(
           <>
