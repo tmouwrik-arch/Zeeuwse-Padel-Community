@@ -590,19 +590,17 @@ function LoginScreen({onLogin,onSwitch,onForgot}:any){
               onError={(e:any)=>{ e.target.style.display="none"; }}/>
           </div>
           <h1 style={s.authTitle}>Zeeuwse Padel</h1>
-          <p style={s.authSub}>Speel mee in Zeeland 🎾</p>
+          <p style={s.authSub}>Join The Community 🎾</p>
         </div>
         {!forgotMode?(
           <>
             <AuthError msg={err}/>
             <AF icon={<Mail size={18}/>}>
-              <input className="auth-bare" placeholder="E-mailadres" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/>
-            </AF>
+            <input className="auth-bare" style={{fontSize:"13px", padding:"8px 0", width:"100%"}} placeholder="E-mailadres" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/>            </AF>
             <AF icon={<Lock size={18}/>} pw showPw={showPw} onTogglePw={()=>setShowPw(v=>!v)}>
-              <input className="auth-bare" placeholder="Wachtwoord" type={showPw?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoComplete="current-password"/>
-            </AF>
+            <input className="auth-bare" style={{fontSize:"13px", padding:"8px 0", width:"100%"}} placeholder="Wachtwoord" type={showPw?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoComplete="current-password"/>            </AF>
             <div style={{textAlign:"right"}}><span className="link" style={{fontSize:12}} onClick={()=>{setForgot(true);setErr("");}}>Wachtwoord vergeten?</span></div>
-            <button className="btn-auth" onClick={go} disabled={busy||!email||!pw}>{busy?"Bezig…":"Inloggen"}</button>
+            <button className="btn-auth" style={{padding:"10px 0", fontSize:"14px", width:"100%"}} onClick={go} disabled={busy||!email||!pw}>{busy?"Bezig…":"Inloggen"}</button>
             <div style={{textAlign:"center",paddingTop:4,fontSize:13,color:C.sub}}>
               Nog geen account?{" "}
               <button onClick={onSwitch} style={{background:"linear-gradient(135deg,#0ea5e9,#0369a1)",color:"#fff",border:"none",borderRadius:10,padding:"7px 14px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginLeft:4}}>
@@ -1396,7 +1394,7 @@ const s: Record<string,any> = {
   // Auth
   authWrap:{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",background:"linear-gradient(160deg,#0f172a 0%,#0ea5e9 100%)",position:"relative",overflow:"hidden"},
   authBg:{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle at 30% 20%,rgba(14,165,233,.3) 0%,transparent 50%),radial-gradient(circle at 70% 80%,rgba(8,145,178,.2) 0%,transparent 50%)",pointerEvents:"none"},
-  authCard:{background:"rgba(255,255,255,.97)",backdropFilter:"blur(20px)",borderRadius:22,padding:"24px 20px",width:"100%",maxWidth:360,display:"flex",flexDirection:"column" as const,gap:12,boxShadow:"0 24px 64px rgba(0,0,0,.35)",position:"relative"},
+  authCard:{background:"rgba(255,255,255,.97)",backdropFilter:"blur(20px)",borderRadius:22,padding:"24px 20px",width:"100%",maxWidth:440,display:"flex",flexDirection:"column" as const,gap:12,boxShadow:"0 24px 64px rgba(0,0,0,.35)",position:"relative"},
   authTitle:{fontSize:22,fontWeight:800,color:C.dark,textAlign:"center" as const,margin:0},
   authSub:{color:C.sub,textAlign:"center" as const,fontSize:13,marginTop:-4},
   regLbl:{fontSize:12,fontWeight:700,color:C.dark,display:"block",marginBottom:5},
