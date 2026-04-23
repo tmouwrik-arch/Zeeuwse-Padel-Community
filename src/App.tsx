@@ -388,8 +388,7 @@ export default function App() {
     if (subScreen.type==="chat"&&match)
       return <ChatScreen match={match} sbUser={sbUser} onBack={()=>setSubScreen(null)} toast$={toast$} addNotif={addNotif}/>;
     if (subScreen.type==="dm")
-      return <DirectMessageScreen friendId={subScreen.friendId} sbUser={sbUser} onBack={()=>setSubScreen(null)} toast$={toast$}/>;
-    if (subScreen.type==="friendProfile")
+    return <DirectMessageScreen friendId={subScreen.friendId} sbUser={sbUser} onBack={()=>setSubScreen(null)} toast$={toast$} addNotif={addNotif}/>;    if (subScreen.type==="friendProfile")
       return <FriendProfileScreen friendId={subScreen.friendId} sbUser={sbUser} onBack={()=>setSubScreen(null)} onChat={()=>setSubScreen({type:"dm",friendId:subScreen.friendId})} toast$={toast$}/>;
   }
   if (!sbUser) return authMode==="login"
@@ -992,8 +991,7 @@ function DirectMessageScreen({friendId,sbUser,onBack,toast$}:any){
   },[sbUser.id,friendId]);
   useEffect(()=>{ loadMsgs(); },[loadMsgs]);
   useEffect(()=>{
-    const ch=sb.channel(`dm-${[sbUser.id,friendId].sort().join("-")}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages"},()=>loadMsgs()).subscribe();
-    return ()=>sb.removeChannel(ch);
+    const ch=sb.channel(`dm-${[sbUser.id,friendId].sort().join("-")}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages"},(pl:any)=>{ loadMsgs(); if(pl.new?.sender_id!==sbUser.id) addNotif?.(`✉️ Nieuw bericht van ${friend?displayName(friend):"vriend"}`,"✉️",{type:"dm",friendId}); }).subscribe();    return ()=>sb.removeChannel(ch);
   },[loadMsgs,sbUser.id,friendId]);
   useEffect(()=>{ endRef.current?.scrollIntoView({behavior:"smooth"}); },[messages]);
   const send=async()=>{
