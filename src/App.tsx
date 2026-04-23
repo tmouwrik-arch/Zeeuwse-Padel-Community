@@ -225,13 +225,13 @@ export default function App() {
         const currentUser = sbUserRef.current;
         if (payload.new?.sender_id!==currentUser?.id){
           const matchId = payload.new?.match_id;
-          addNotif("💬 Nieuw bericht in een partijtje","💬",{type:"chat",matchId});
+          addNotif("Nieuw bericht in een partijtje","💬",{type:"chat",matchId});
         }
       })
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages"},(payload:any)=>{
         const currentUser = sbUserRef.current;
         if (payload.new?.receiver_id===currentUser?.id){
-          addNotif("✉️ Nieuw bericht van een vriend","✉️",{type:"dm",friendId:payload.new?.sender_id});
+          addNotif("Nieuw bericht van een vriend","✉️",{type:"dm",friendId:payload.new?.sender_id});
         }
       })
       .subscribe();
@@ -595,7 +595,7 @@ function LoginScreen({onLogin,onSwitch,onForgot}:any){
           <>
             <AuthError msg={err}/>
             <AF icon={<Mail size={18}/>}>
-            <input className="auth-bare" style={{fontSize:"13px", padding:"8px 0", width:"100%"}} placeholder="E-mailadres" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/>            </AF>
+            <input className="auth-bare" style={{fontSize:"17px", padding:"8px 0", width:"100%"}} placeholder="E-mailadres" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/>            </AF>
             <AF icon={<Lock size={18}/>} pw showPw={showPw} onTogglePw={()=>setShowPw(v=>!v)}>
             <input className="auth-bare" style={{fontSize:"13px", padding:"8px 0", width:"100%"}} placeholder="Wachtwoord" type={showPw?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoComplete="current-password"/>            </AF>
             <div style={{textAlign:"right"}}><span className="link" style={{fontSize:12}} onClick={()=>{setForgot(true);setErr("");}}>Wachtwoord vergeten?</span></div>
@@ -728,7 +728,6 @@ function OnboardScreen({onOnboard}:any){
         <div style={{textAlign:"center"}}><h1 style={s.authTitle}>Bijna klaar! 🎾</h1><p style={s.authSub}>Stel je padelerprofiel in</p></div>
         <div><label style={s.regLbl}>Speelniveau</label><div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:4}}>{LEVELS.map(l=><button key={l} type="button" onClick={()=>setF(p=>({...p,level:l}))} style={{padding:"7px 10px",borderRadius:20,fontSize:12,fontWeight:700,border:"2px solid",cursor:"pointer",background:f.level===l?C.sea:"#fff",color:f.level===l?"#fff":C.dark,borderColor:f.level===l?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{LEVEL_LABELS[l]||l}</button>)}</div></div>
         <div><label style={s.regLbl}>KNLTB Rating <span style={{color:C.sub,fontWeight:400}}>(optioneel)</span></label><select className="inp" value={f.knltb_rating} onChange={e=>setF(p=>({...p,knltb_rating:e.target.value}))}><option value="">Geen / onbekend</option>{KNLTB_RATINGS.map(r=><option key={r} value={r}>{r}</option>)}</select></div>
-        <div><label style={s.regLbl}>Woonplaats</label><select className="inp" value={f.location} onChange={e=>setF(p=>({...p,location:e.target.value}))}>{LOCATIONS.map(l=><option key={l}>{l}</option>)}</select></div>
         <button className="btn-auth" onClick={go} disabled={busy}>{busy?"Opslaan…":"Profiel opslaan"}</button>
       </div>
     </div>
@@ -944,7 +943,7 @@ function ChatScreen({match:m,sbUser,onBack,toast$,addNotif}:any){
   useEffect(()=>{
     const ch=sb.channel(`chat-${m.id}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:`match_id=eq.${m.id}`},(pl:any)=>{
       loadMsgs(); // Laad voor iedereen (ook verzender)
-      if (pl.new?.sender_id!==sbUser?.id) addNotif?.(`💬 Nieuw bericht in ${m.courts?.name}`,"💬",{type:"chat",matchId:m.id});
+      if (pl.new?.sender_id!==sbUser?.id) addNotif?.(`Nieuw bericht in ${m.courts?.name}`,"💬",{type:"chat",matchId:m.id});
     }).subscribe();
     return ()=>sb.removeChannel(ch);
   },[m.id,loadMsgs,sbUser?.id,addNotif]);
@@ -991,7 +990,7 @@ function DirectMessageScreen({friendId,sbUser,onBack,toast$}:any){
   },[sbUser.id,friendId]);
   useEffect(()=>{ loadMsgs(); },[loadMsgs]);
   useEffect(()=>{
-    const ch=sb.channel(`dm-${[sbUser.id,friendId].sort().join("-")}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages"},(pl:any)=>{ loadMsgs(); if(pl.new?.sender_id!==sbUser.id) addNotif?.(`✉️ Nieuw bericht van ${friend?displayName(friend):"vriend"}`,"✉️",{type:"dm",friendId}); }).subscribe();    return ()=>sb.removeChannel(ch);
+    const ch=sb.channel(`dm-${[sbUser.id,friendId].sort().join("-")}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages"},(pl:any)=>{ loadMsgs(); if(pl.new?.sender_id!==sbUser.id) addNotif?.(`Nieuw bericht van ${friend?displayName(friend):"vriend"}`,"✉️",{type:"dm",friendId}); }).subscribe();    return ()=>sb.removeChannel(ch);
   },[loadMsgs,sbUser.id,friendId]);
   useEffect(()=>{ endRef.current?.scrollIntoView({behavior:"smooth"}); },[messages]);
   const send=async()=>{
@@ -1352,7 +1351,7 @@ const s: Record<string,any> = {
   appShell:{fontFamily:"'Nunito',sans-serif",background:C.bg,minHeight:"100dvh",width:"100%",overflowX:"hidden"},
   mainWrap:{maxWidth:APP_MAX_W,margin:"0 auto",paddingTop: "calc(95px + env(safe-area-inset-top))",paddingBottom: 100},
   // Header: fixed + full width, content gecentreerd binnen
-  header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:2000,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"max(15px + env(safe-area-inset-top))"},
+  header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:2000,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"calc(15px + env(safe-area-inset-top))"},
   // Backheader voor subschermen (ook full width)
   backHdr:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"sticky",top:0,zIndex:20,boxShadow:"0 2px 10px rgba(3,105,161,0.2)",paddingTop: "calc(15px + env(safe-area-inset-top))",paddingBottom: "12px"},
   backBtn:{background:"none",border:"none",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"},
