@@ -552,8 +552,7 @@ function AuthSuccess({msg}:any){
 // Flex-gebaseerd invoerveld – icoon kan NOOIT overlappen
 function AF({icon,children,pw,onTogglePw,showPw}:any){
   return (
-    <div style={{display:"flex",alignItems:"center",border:"1.5px solid #e2e8f0",borderRadius:12,background:"#f8fafc",padding:"0 14px",gap:10,transition:"border .2s"}}
-      onFocus={()=>{}} className="auth-field-wrap">
+<div style={{display:"flex",alignItems:"center",border:"1.5px solid #e2e8f0",borderRadius:12,background:"#f8fafc",padding:"12px 14px",gap:10,transition:"border .2s"}}      onFocus={()=>{}} className="auth-field-wrap">
       <span style={{display:"flex",alignItems:"center",flexShrink:0,color:C.sub}}>{icon}</span>
       {children}
       {pw&&<button type="button" style={{background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",color:C.sub,flexShrink:0}} onClick={onTogglePw}>{showPw?<EyeOff size={16}/>:<Eye size={16}/>}</button>}
@@ -587,7 +586,7 @@ function LoginScreen({onLogin,onSwitch,onForgot}:any){
       <div style={s.authCard}>
         <div style={{textAlign:"center"}}>
           <div style={{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px",boxShadow:"0 8px 24px rgba(14,165,233,.4)",overflow:"hidden",padding:6}}>
-            <img src="/Gemini_Generated_Image_jjvfrsjjvfrsjjvf.png" alt="Logo" style={{width:"100%",height:"100%",objectFit:"contain",filter:"brightness(0) invert(1)"}}
+            <img src="/Logo.png" alt="Logo" style={{width:"100%",height:"100%",objectFit:"contain"}}
               onError={(e:any)=>{ e.target.style.display="none"; }}/>
           </div>
           <h1 style={s.authTitle}>Zeeuwse Padel</h1>
@@ -1357,7 +1356,7 @@ const s: Record<string,any> = {
   appShell:{fontFamily:"'Nunito',sans-serif",background:C.bg,minHeight:"100dvh",width:"100%",overflowX:"hidden"},
   mainWrap:{maxWidth:APP_MAX_W,margin:"0 auto",paddingTop: "calc(95px + env(safe-area-inset-top))",paddingBottom: 100},
   // Header: fixed + full width, content gecentreerd binnen
-  header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:1000,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"max(15px + env(safe-area-inset-top))"},
+  header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:2000,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"max(15px + env(safe-area-inset-top))"},
   // Backheader voor subschermen (ook full width)
   backHdr:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"sticky",top:0,zIndex:20,boxShadow:"0 2px 10px rgba(3,105,161,0.2)",paddingTop: "calc(15px + env(safe-area-inset-top))",paddingBottom: "12px"},
   backBtn:{background:"none",border:"none",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"},
@@ -1441,7 +1440,7 @@ const css=`
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 
   .auth-field-wrap:focus-within{border-color:#0ea5e9 !important;background:#fff !important;}
-  .auth-bare{flex:1;border:none;background:transparent;outline:none;padding:13px 0;font-size:14px;font-family:inherit;color:#1e293b;min-width:0;}
+  .auth-bare{flex:1;border:none;background:transparent;outline:none;padding:5px 0;font-size:18px;font-family:inherit;color:#1e293b;min-width:0;}
   .auth-bare::placeholder{color:#94a3b8;}
   .inp{width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;background:#fff;outline:none;color:#1e293b;}
   .inp:focus{border-color:#0ea5e9;}
@@ -1449,7 +1448,7 @@ const css=`
   .inp-sm:focus{border-color:#0ea5e9;}
   .btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;}
   .btn-primary:disabled{opacity:.45;cursor:not-allowed;}
-  .btn-auth{width:100%;padding:13px;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;}
+  .btn-auth{width:100%;padding:15px;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;}
   .btn-auth:disabled{opacity:.4;cursor:not-allowed;}
   .btn-auth-outline{flex:1;padding:13px;background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;font-size:14px;font-weight:700;color:#64748b;cursor:pointer;font-family:inherit;}
   .btn-secondary{width:100%;padding:12px;background:#f0f9ff;border:1.5px solid #0ea5e9;border-radius:12px;font-size:14px;font-weight:700;color:#0ea5e9;cursor:pointer;font-family:inherit;}
@@ -1457,6 +1456,9 @@ const css=`
   .link{color:#0ea5e9;cursor:pointer;font-weight:700;}
   .toast{position:fixed;top:max(14px,calc(env(safe-area-inset-top)+70px));left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:300;white-space:nowrap;animation:fadeIn .2s;box-shadow:0 4px 20px rgba(0,0,0,.2);}
   .toast-error{background:#ef4444;}
+  .leaflet-top, .leaflet-bottom {
+    z-index: 500 !important;}
+  .leaflet-control-container {z-index: 500 !important;}
   select.inp,select.inp-sm{appearance:none;-webkit-appearance:none;}
   textarea.inp{font-family:inherit;}
   .spinner{width:32px;height:32px;border:3px solid #e2e8f0;border-top-color:#0ea5e9;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;}
