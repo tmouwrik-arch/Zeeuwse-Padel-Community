@@ -43,17 +43,6 @@ const Lightbulb     = (p:any) => <Svg {...p}><path d="M9 18h6"/><path d="M10 22h
 const UserPlus      = (p:any) => <Svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></Svg>;
 const Hash          = (p:any) => <Svg {...p}><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></Svg>;
 
-// Padelbal logo SVG
-const PadelLogo = ({size=32}:any) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-    <circle cx="16" cy="16" r="14" fill="white" fillOpacity="0.2" stroke="white" strokeWidth="1.5"/>
-    <circle cx="16" cy="16" r="10" fill="none" stroke="white" strokeWidth="1.2" strokeOpacity="0.6"/>
-    <path d="M6 16 Q16 10 26 16" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-    <path d="M6 16 Q16 22 26 16" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-    <circle cx="16" cy="16" r="3" fill="white"/>
-  </svg>
-);
-
 // ─── Supabase ─────────────────────────────────────────────────────────────────
 const SUPABASE_URL      = "https://yuaujlezfoyvbdgtoxon.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_o1Eb2xLvP-0-h3j-f8L6pg_IvCt1AiE";
@@ -78,8 +67,8 @@ const CITY_COORDS: Record<string,[number,number]> = {
   Goes:[51.5036,3.8878], Domburg:[51.5631,3.4988], Terneuzen:[51.3350,3.8300],
   Hulst:[51.2797,4.0508], Breskens:[51.3994,3.5617], Axel:[51.2594,3.9183],
 };
-// Centrum van Zeeland (voor het weerbericht)
 const ZEELAND_LAT = 51.46, ZEELAND_LON = 3.87;
+const APP_MAX_W = 430;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const today       = () => new Date().toISOString().split("T")[0];
@@ -120,14 +109,12 @@ const requestNotifPermission = async () => {
 const sendBrowserNotif = (title:string, body:string, onClick?:()=>void) => {
   if (!("Notification" in window)||Notification.permission!=="granted") return;
   try {
-    const n = new Notification(title, { body,
-      icon:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎾</text></svg>",
-    });
+    const n = new Notification(title, { body, icon:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎾</text></svg>" });
     n.onclick = () => { window.focus(); n.close(); onClick?.(); };
   } catch {}
 };
 
-// ─── Weather (Zeeland centraal) ────────────────────────────────────────────────
+// ─── Weather ──────────────────────────────────────────────────────────────────
 async function fetchWeather() {
   try {
     const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${ZEELAND_LAT}&longitude=${ZEELAND_LON}&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m&wind_speed_unit=kmh&timezone=Europe%2FAmsterdam`);
@@ -172,6 +159,8 @@ export default function App() {
   const [filterCity,   setFilterCity]   = useState("");
   const [filterRadius, setFilterRadius] = useState(0);
   const [filterClub,   setFilterClub]   = useState("");
+  const sbUserRef = useRef<any>(null);
+  sbUserRef.current = sbUser;
 
   const toast$ = useCallback((msg:string,type="success")=>{
     setToast({msg,type}); setTimeout(()=>setToast(null),3500);
@@ -191,7 +180,6 @@ export default function App() {
     sendBrowserNotif("Zeeuwse Padel", text, link?()=>navigate(link):undefined);
   },[navigate]);
 
-  // Auth
   useEffect(()=>{
     sb.auth.getSession().then(({data:{session}}:any)=>{
       if (session?.user){ setSbUser(session.user); loadProfile(session.user.id); requestNotifPermission(); }
@@ -228,80 +216,76 @@ export default function App() {
 
   useEffect(()=>{ fetchAll(); },[fetchAll]);
 
+  // Realtime — gebruik ref zodat sbUser altijd actueel is in de closure
   useEffect(()=>{
-    const ch=sb.channel("padel-rt")
+    const ch=sb.channel("padel-rt-v3")
       .on("postgres_changes",{event:"*",schema:"public",table:"matches"},()=>fetchAll())
       .on("postgres_changes",{event:"*",schema:"public",table:"participants"},()=>fetchAll())
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},(payload:any)=>{
-        if (payload.new?.sender_id!==sbUser?.id)
-          addNotif("💬 Nieuw bericht in een partijtje","💬",{type:"chat",matchId:payload.new?.match_id});
+        const currentUser = sbUserRef.current;
+        if (payload.new?.sender_id!==currentUser?.id){
+          const matchId = payload.new?.match_id;
+          addNotif("💬 Nieuw bericht in een partijtje","💬",{type:"chat",matchId});
+        }
       })
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages"},(payload:any)=>{
-        if (payload.new?.receiver_id===sbUser?.id)
+        const currentUser = sbUserRef.current;
+        if (payload.new?.receiver_id===currentUser?.id){
           addNotif("✉️ Nieuw bericht van een vriend","✉️",{type:"dm",friendId:payload.new?.sender_id});
+        }
       })
       .subscribe();
     return ()=>sb.removeChannel(ch);
-  },[fetchAll,sbUser?.id,addNotif]);
+  },[fetchAll,addNotif]);
 
-  // ─── Auth handlers ───────────────────────────────────────────────────────────
-  const handleLogin = async ({email,password}:any) => {
+  // ─── Auth ────────────────────────────────────────────────────────────────────
+  const handleLogin = async ({email,password}:any): Promise<string> => {
     const {error}=await sb.auth.signInWithPassword({email,password});
-    if (error) toast$(error.message.toLowerCase().includes("invalid")?"Ongeldig e-mailadres of wachtwoord":error.message,"error");
-    else { toast$("Welkom terug! 🎾"); setScreen("home"); }
+    if (error){
+      const msg = error.message.toLowerCase();
+      if (msg.includes("invalid")||msg.includes("credentials")) return "Ongeldig e-mailadres of wachtwoord.";
+      if (msg.includes("not found")) return "Geen account gevonden met dit e-mailadres.";
+      return error.message;
+    }
+    setScreen("home"); return "";
   };
-  const handleForgot = async (email:string) => {
+  const handleForgot = async (email:string): Promise<string> => {
     const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});
-    if (error) toast$(error.message,"error"); else toast$("Resetlink verstuurd! Check je inbox 📧");
+    if (error) return error.message;
+    return "";
   };
-
-  // GEFIXTE register – robuust voor alle Supabase configuraties
-  const handleRegister = async ({email,password,full_name,level,location,knltb_rating}:any): Promise<"ok"|"confirm"|"error"> => {
+  const handleRegister = async ({email,password,full_name,level,location,knltb_rating}:any): Promise<"ok"|"confirm"|string> => {
     try {
-      const {data,error}=await sb.auth.signUp({
-        email, password,
-        options:{ data:{ full_name, username: full_name.toLowerCase().replace(/\s+/g,"_") } }
+      const {data,error}=await sb.auth.signUp({ email, password,
+        options:{ data:{ full_name, username: full_name.toLowerCase().replace(/\s+/g,"_") }}
       });
-      if (error) { toast$(error.message,"error"); return "error"; }
-      if (!data.user) { toast$("Er ging iets mis. Probeer opnieuw.","error"); return "error"; }
-
-      // Profiel aanmaken (werkt altijd, ook zonder actieve sessie)
+      if (error) return error.message;
+      if (!data.user) return "Er ging iets mis. Probeer het opnieuw.";
       const profileData = {
-        id: data.user.id, email, full_name,
+        id:data.user.id, email, full_name,
         username: full_name.toLowerCase().replace(/\s+/g,"_"),
         location, level: LEVELS.indexOf(level)+1||3,
-        knltb_rating: knltb_rating||null, rating: 0
+        knltb_rating: knltb_rating||null, rating:0
       };
-      await sb.from("profiles").upsert(profileData);
-
-      if (data.session) {
-        // Direct ingelogd (email bevestiging UIT in Supabase)
-        setProfile({...profileData});
-        toast$("Welkom bij Padel Zeeland! 🎾");
-        return "ok";
-      } else {
-        // Email bevestiging vereist
-        return "confirm";
-      }
-    } catch(e:any) {
-      toast$(e.message||"Registratie mislukt","error"); return "error";
-    }
+      const {error:pErr}=await sb.from("profiles").upsert(profileData);
+      if (pErr) console.error("Profile error:", pErr.message);
+      if (data.session){ setProfile({...profileData}); return "ok"; }
+      return "confirm";
+    } catch(e:any){ return e.message||"Registratie mislukt"; }
   };
-
   const handleOnboard = async ({level,location,knltb_rating}:any) => {
     if (!sbUser) return;
     const meta=sbUser.user_metadata||{};
     const full_name=meta.full_name||meta.name||sbUser.email?.split("@")[0]||"Speler";
-    const pd = { id:sbUser.id, email:sbUser.email, full_name,
-      username:full_name.toLowerCase().replace(/\s+/g,"_"),
-      location, level:LEVELS.indexOf(level)+1||3,
-      knltb_rating:knltb_rating||null, avatar_url:meta.avatar_url||meta.picture||null, rating:0 };
+    const pd = { id:sbUser.id, email:sbUser.email, full_name, username:full_name.toLowerCase().replace(/\s+/g,"_"),
+      location, level:LEVELS.indexOf(level)+1||3, knltb_rating:knltb_rating||null,
+      avatar_url:meta.avatar_url||meta.picture||null, rating:0 };
     await sb.from("profiles").upsert(pd);
     setProfile(pd); setNeedsOnboard(false); toast$("Welkom bij Padel Zeeland! 🎾");
   };
   const handleLogout = async () => { await sb.auth.signOut(); setSbUser(null); setProfile(null); setAuthMode("login"); };
 
-  // ─── Match handlers ──────────────────────────────────────────────────────────
+  // ─── Matches ─────────────────────────────────────────────────────────────────
   const getCount = (m:any) => Number(m?.participants?.[0]?.count??0);
   const joinMatch = async (matchId:string) => {
     if (!sbUser){ toast$("Log eerst in","error"); return; }
@@ -310,8 +294,8 @@ export default function App() {
     const {error}=await sb.from("participants").insert({match_id:matchId,user_id:sbUser.id});
     if (error){ toast$(error.code==="23505"?"Je doet al mee!":error.message,"error"); return; }
     toast$("Je doet mee! 🎾");
-    addNotif(`Ingeschreven: ${match?.courts?.name} ${fmtDate(match?.date)}`,"🎾",{matchId});
-    if (cnt+1>=4) addNotif(`🎉 Partijtje compleet! ${match?.courts?.name}!`,"🎉",{matchId});
+    addNotif(`Ingeschreven: ${match?.courts?.name} op ${fmtDate(match?.date)}`,"🎾",{matchId});
+    if (cnt+1>=4) addNotif(`🎉 Partijtje compleet! ${match?.courts?.name}`,"🎉",{matchId});
     fetchAll();
   };
   const leaveMatch = async (matchId:string) => {
@@ -325,18 +309,28 @@ export default function App() {
   const toggleCourtBooked = async (matchId:string,newVal:boolean) => {
     const {error}=await sb.from("matches").update({court_booked:newVal}).eq("id",matchId);
     if (error) toast$("Fout: "+error.message,"error");
-    else { toast$(newVal?"✅ Baan geboekt!":"Boeking ongedaan gemaakt"); fetchAll(); }
+    else { toast$(newVal?"✅ Baan geboekt!":"Boeking ongedaan"); fetchAll(); }
   };
   const setCourtNumber = async (matchId:string,num:number|null) => {
     const {error}=await sb.from("matches").update({court_number:num}).eq("id",matchId);
     if (error) toast$(error.message,"error"); else { toast$(num?`Baan #${num} ingesteld`:"Baannummer verwijderd"); fetchAll(); }
   };
-  const createMatch = async ({courtId,date,time,level,note,court_booked}:any) => {
+  const createMatch = async ({courtId,date,time,level,note,court_booked,invitedFriends}:any) => {
     if (!sbUser){ toast$("Log eerst in","error"); return; }
     if (!isMatchTimeValid(date,time)){ toast$("Starttijd moet minstens 2 uur in de toekomst zijn","error"); return; }
-    const {data:nm,error}=await sb.from("matches").insert({court_id:courtId,date,start_time:time,level,description:note||null,host_id:sbUser.id,is_cancelled:false,court_booked:!!court_booked}).select().single();
+    const {data:nm,error}=await sb.from("matches").insert({
+      court_id:courtId,date,start_time:time,level,description:note||null,
+      host_id:sbUser.id,is_cancelled:false,court_booked:!!court_booked
+    }).select().single();
     if (error){ toast$(error.message,"error"); return; }
+    // Host toevoegen
     await sb.from("participants").insert({match_id:nm.id,user_id:sbUser.id});
+    // Uitgenodigde vrienden toevoegen als participant
+    if (invitedFriends&&invitedFriends.length>0){
+      for (const fid of invitedFriends){
+        await sb.from("participants").insert({match_id:nm.id,user_id:fid}).then(()=>{});
+      }
+    }
     toast$("Partijtje aangemaakt! 🎾"); addNotif("Jouw partijtje staat online!","🎾",{matchId:nm.id});
     await fetchAll(); setScreen("matches");
   };
@@ -375,7 +369,7 @@ export default function App() {
     if (filterCity&&filterRadius>0){
       const cc=CITY_COORDS[filterCity]; const mc=CITY_COORDS[m.courts?.city]||(m.courts?.lat&&m.courts?.lng?[m.courts.lat,m.courts.lng] as [number,number]:null);
       if (cc&&mc){ if (haversineKm(cc[0],cc[1],mc[0],mc[1])>filterRadius) return false; }
-    } else if (filterCity&&!filterRadius){ if (m.courts?.city!==filterCity) return false; }
+    } else if (filterCity){ if (m.courts?.city!==filterCity) return false; }
     if (filterClub&&!(m.courts?.name||"").toLowerCase().includes(filterClub.toLowerCase())) return false;
     return true;
   });
@@ -436,10 +430,10 @@ function NotifPanel({notifs,onClose,onMarkAll,onNavigate}:any){
   return (
     <div style={s.overlay} onClick={onClose}>
       <div style={s.notifPanel} onClick={(e:any)=>e.stopPropagation()}>
-        <div style={s.notifHead}><strong style={{fontSize:15}}>🔔 Meldingen</strong><span className="link" style={{fontSize:12}} onClick={onMarkAll}>Alles gelezen</span></div>
-        {notifs.length===0&&<div style={{padding:"24px 16px",textAlign:"center",color:C.sub,fontSize:13}}>Geen meldingen</div>}
+        <div style={s.notifHead}><strong>🔔 Meldingen</strong><span className="link" style={{fontSize:12}} onClick={onMarkAll}>Alles gelezen</span></div>
+        {notifs.length===0&&<div style={{padding:"24px",textAlign:"center",color:C.sub,fontSize:13}}>Geen meldingen</div>}
         {notifs.map((n:any)=>(
-          <div key={n.id} onClick={()=>{if(n.link){onMarkAll?.();onNavigate(n.link);}}} style={{padding:"10px 14px",borderBottom:"1px solid #f1f5f9",background:n.read?"#f8fafc":"#e0f2fe",cursor:n.link?"pointer":"default"}}>
+          <div key={n.id} onClick={()=>{onMarkAll();if(n.link)onNavigate(n.link);onClose();}} style={{padding:"10px 14px",borderBottom:"1px solid #f1f5f9",background:n.read?"#f8fafc":"#e0f2fe",cursor:n.link?"pointer":"default"}}>
             <div style={{fontSize:13,color:C.dark,lineHeight:1.4}}>{n.icon} {n.text}{n.link&&<span style={{color:C.sea,fontSize:11,marginLeft:6}}>→ bekijken</span>}</div>
             <div style={{fontSize:11,color:C.sub,marginTop:2}}>{n.time}</div>
           </div>
@@ -460,7 +454,6 @@ function FeedbackModal({onClose,onSubmit}:any){
           <div style={{display:"flex",alignItems:"center",gap:8}}><Lightbulb size={20} color={C.sea}/><strong style={{fontSize:16,fontWeight:800,color:C.dark}}>Idee of suggestie</strong></div>
           <button style={s.closeBtn} onClick={onClose}><X size={18}/></button>
         </div>
-        <p style={{fontSize:13,color:C.sub,marginBottom:10}}>Heb je een idee om de app te verbeteren? We lezen alles! 🙌</p>
         <textarea className="inp" rows={5} placeholder="Jouw idee…" value={msg} onChange={e=>setMsg(e.target.value)} style={{resize:"none",marginBottom:10}}/>
         <button className="btn-primary" disabled={!msg.trim()||busy} onClick={go}>{busy?"Versturen…":"Verstuur 💡"}</button>
       </div>
@@ -480,8 +473,7 @@ function SuggestCourtModal({onClose,onSubmit}:any){
           <button style={s.closeBtn} onClick={onClose}><X size={18}/></button>
         </div>
         <label style={s.lbl}>Naam baan *</label><input className="inp" placeholder="bijv. Padelclub Middelburg" value={f.name} onChange={set("name")} style={{marginBottom:8}}/>
-        <label style={s.lbl}>Stad *</label>
-        <select className="inp" value={f.city} onChange={set("city")} style={{marginBottom:8}}><option value="">Kies een stad…</option>{LOCATIONS.map(l=><option key={l}>{l}</option>)}</select>
+        <label style={s.lbl}>Stad *</label><select className="inp" value={f.city} onChange={set("city")} style={{marginBottom:8}}><option value="">Kies…</option>{LOCATIONS.map(l=><option key={l}>{l}</option>)}</select>
         <label style={s.lbl}>Adres</label><input className="inp" placeholder="bijv. Sportlaan 4" value={f.address} onChange={set("address")} style={{marginBottom:8}}/>
         <label style={s.lbl}>Boekingslink</label><input className="inp" placeholder="https://…" type="url" value={f.booking_url} onChange={set("booking_url")} style={{marginBottom:8}}/>
         <label style={s.lbl}>Extra info</label><input className="inp" placeholder="Bijv. 4 banen…" value={f.note} onChange={set("note")} style={{marginBottom:12}}/>
@@ -498,17 +490,24 @@ function SuggestCourtModal({onClose,onSubmit}:any){
 function Header({profile,unread,onBell,onProfile}:any){
   return (
     <header style={s.header}>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <PadelLogo size={34}/>
-        <div>
-          <div style={{color:"#fff",fontWeight:800,fontSize:15,lineHeight:1}}>Zeeuwse Padel</div>
-          <div style={{color:"rgba(255,255,255,0.7)",fontSize:10,fontWeight:600}}>Community</div>
+      <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {/* Eigen logo afbeelding */}
+          <div style={{width:36,height:36,borderRadius:10,overflow:"hidden",background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <img src="/Gemini_Generated_Image_jjvfrsjjvfrsjjvf.png" alt="Logo" style={{width:36,height:36,objectFit:"contain",filter:"brightness(0) invert(1)"}}
+              onError={(e:any)=>{
+                // Fallback: toon SVG padel logo
+                e.target.style.display="none";
+                e.target.parentNode.innerHTML='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M3 12 Q12 7 21 12"/><path d="M3 12 Q12 17 21 12"/></svg>';
+              }}/>
+          </div>
+          <div><div style={{color:"#fff",fontWeight:800,fontSize:15,lineHeight:1}}>Zeeuwse Padel</div><div style={{color:"rgba(255,255,255,0.7)",fontSize:10,fontWeight:600}}>Community</div></div>
         </div>
-      </div>
-      <div style={{display:"flex",gap:10,alignItems:"center"}}>
-        <button style={s.bellBtn} onClick={onBell}><Bell size={18} color="#fff"/>{unread>0&&<span style={s.badge}>{unread}</span>}</button>
-        <div style={s.ava} onClick={onProfile}>
-          {profile?.avatar_url?<img src={profile.avatar_url} alt="" style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}}/>:<span style={{fontSize:12,fontWeight:700}}>{initials(profile)}</span>}
+        <div style={{display:"flex",gap:10,alignItems:"center"}}>
+          <button style={s.bellBtn} onClick={onBell}><Bell size={18} color="#fff"/>{unread>0&&<span style={s.badge}>{unread}</span>}</button>
+          <div style={s.ava} onClick={onProfile}>
+            {profile?.avatar_url?<img src={profile.avatar_url} alt="" style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}}/>:<span style={{fontSize:12,fontWeight:700}}>{initials(profile)}</span>}
+          </div>
         </div>
       </div>
     </header>
@@ -536,12 +535,24 @@ function BottomNav({screen,setScreen}:any){
   );
 }
 
-// ─── Auth input helper (flex-based, geen overlap!) ────────────────────────────
-function AuthField({icon,children,style}:any){
+// ─── Auth wrapper – toont inline foutmeldingen (GEEN externe toast nodig) ─────
+function AuthError({msg}:any){
+  if (!msg) return null;
+  return <div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:10,padding:"10px 13px",fontSize:13,color:"#991b1b",fontWeight:600,display:"flex",alignItems:"center",gap:8}}><AlertTriangle size={15} color="#dc2626"/>{msg}</div>;
+}
+function AuthSuccess({msg}:any){
+  if (!msg) return null;
+  return <div style={{background:"#dcfce7",border:"1px solid #86efac",borderRadius:10,padding:"10px 13px",fontSize:13,color:"#166534",fontWeight:600,display:"flex",alignItems:"center",gap:8}}><CheckCircle size={15} color="#16a34a"/>{msg}</div>;
+}
+
+// Flex-gebaseerd invoerveld – icoon kan NOOIT overlappen
+function AF({icon,children,pw,onTogglePw,showPw}:any){
   return (
-    <div className="auth-field" style={style}>
-      <span style={{flexShrink:0,display:"flex",alignItems:"center",color:C.sub}}>{icon}</span>
+    <div style={{display:"flex",alignItems:"center",border:"1.5px solid #e2e8f0",borderRadius:12,background:"#f8fafc",padding:"0 14px",gap:10,transition:"border .2s"}}
+      onFocus={()=>{}} className="auth-field-wrap">
+      <span style={{display:"flex",alignItems:"center",flexShrink:0,color:C.sub}}>{icon}</span>
       {children}
+      {pw&&<button type="button" style={{background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",color:C.sub,flexShrink:0}} onClick={onTogglePw}>{showPw?<EyeOff size={16}/>:<Eye size={16}/>}</button>}
     </div>
   );
 }
@@ -551,29 +562,47 @@ function LoginScreen({onLogin,onSwitch,onForgot}:any){
   const [email,setEmail]=useState(""); const [pw,setPw]=useState(""); const [busy,setBusy]=useState(false);
   const [showPw,setShowPw]=useState(false); const [forgotMode,setForgot]=useState(false);
   const [forgotEmail,setFE]=useState(""); const [forgotSent,setFS]=useState(false);
-  const go=async()=>{ if (!email||!pw) return; setBusy(true); await onLogin({email,password:pw}); setBusy(false); };
+  const [err,setErr]=useState(""); const [forgotErr,setForgotErr]=useState("");
+
+  const go=async()=>{
+    if (!email||!pw){ setErr("Vul je e-mailadres en wachtwoord in."); return; }
+    setBusy(true); setErr("");
+    const msg=await onLogin({email,password:pw});
+    if (msg) setErr(msg);
+    setBusy(false);
+  };
+  const sendReset=async()=>{
+    if (!forgotEmail){ setForgotErr("Vul je e-mailadres in."); return; }
+    setBusy(true); setForgotErr("");
+    const msg=await onForgot(forgotEmail);
+    if (msg) setForgotErr(msg); else setFS(true);
+    setBusy(false);
+  };
   return (
     <div style={s.authWrap}><div style={s.authBg}/>
       <div style={s.authCard}>
         <div style={{textAlign:"center"}}>
-          <div style={{width:70,height:70,borderRadius:20,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px",boxShadow:"0 8px 24px rgba(14,165,233,.4)"}}><PadelLogo size={46}/></div>
+          <div style={{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px",boxShadow:"0 8px 24px rgba(14,165,233,.4)",overflow:"hidden",padding:6}}>
+            <img src="/Gemini_Generated_Image_jjvfrsjjvfrsjjvf.png" alt="Logo" style={{width:"100%",height:"100%",objectFit:"contain",filter:"brightness(0) invert(1)"}}
+              onError={(e:any)=>{ e.target.style.display="none"; }}/>
+          </div>
           <h1 style={s.authTitle}>Zeeuwse Padel</h1>
-          <p style={s.authSub}>Speel met spelers in heel Zeeland</p>
+          <p style={s.authSub}>Speel mee in Zeeland 🎾</p>
         </div>
         {!forgotMode?(
           <>
-            <AuthField icon={<Mail size={18}/>}>
+            <AuthError msg={err}/>
+            <AF icon={<Mail size={18}/>}>
               <input className="auth-bare" placeholder="E-mailadres" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/>
-            </AuthField>
-            <AuthField icon={<Lock size={18}/>}>
+            </AF>
+            <AF icon={<Lock size={18}/>} pw showPw={showPw} onTogglePw={()=>setShowPw(v=>!v)}>
               <input className="auth-bare" placeholder="Wachtwoord" type={showPw?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoComplete="current-password"/>
-              <button style={{background:"none",border:"none",cursor:"pointer",padding:"0 4px",display:"flex",alignItems:"center",color:C.sub,flexShrink:0}} onClick={()=>setShowPw(v=>!v)}>{showPw?<EyeOff size={16}/>:<Eye size={16}/>}</button>
-            </AuthField>
-            <div style={{textAlign:"right",marginTop:-4}}><span className="link" style={{fontSize:12}} onClick={()=>setForgot(true)}>Wachtwoord vergeten?</span></div>
+            </AF>
+            <div style={{textAlign:"right"}}><span className="link" style={{fontSize:12}} onClick={()=>{setForgot(true);setErr("");}}>Wachtwoord vergeten?</span></div>
             <button className="btn-auth" onClick={go} disabled={busy||!email||!pw}>{busy?"Bezig…":"Inloggen"}</button>
-            <div style={{textAlign:"center",padding:"4px 0",fontSize:14,color:C.sub}}>
+            <div style={{textAlign:"center",paddingTop:4,fontSize:13,color:C.sub}}>
               Nog geen account?{" "}
-              <button onClick={onSwitch} style={{background:"linear-gradient(135deg,#0ea5e9,#0369a1)",color:"#fff",border:"none",borderRadius:10,padding:"8px 16px",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginLeft:4}}>
+              <button onClick={onSwitch} style={{background:"linear-gradient(135deg,#0ea5e9,#0369a1)",color:"#fff",border:"none",borderRadius:10,padding:"7px 14px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginLeft:4}}>
                 Maak account aan →
               </button>
             </div>
@@ -581,14 +610,16 @@ function LoginScreen({onLogin,onSwitch,onForgot}:any){
         ):(
           <>
             <h3 style={{fontWeight:800,fontSize:15,color:C.dark}}>Wachtwoord vergeten</h3>
-            {forgotSent?<div style={{background:"#dcfce7",borderRadius:12,padding:14,textAlign:"center",fontSize:13,color:"#166534",fontWeight:700}}>Resetlink verstuurd! Check je inbox 📧</div>:(
-              <>
-                <p style={{fontSize:13,color:C.sub}}>Vul je e-mailadres in voor een resetlink.</p>
-                <AuthField icon={<Mail size={18}/>}><input className="auth-bare" placeholder="E-mailadres" type="email" value={forgotEmail} onChange={e=>setFE(e.target.value)}/></AuthField>
-                <button className="btn-auth" onClick={async()=>{ setBusy(true); await onForgot(forgotEmail); setFS(true); setBusy(false); }} disabled={busy||!forgotEmail}>{busy?"Versturen…":"Resetlink versturen"}</button>
-              </>
-            )}
-            <p style={{textAlign:"center",fontSize:13,color:C.sub}}><span className="link" onClick={()=>{setForgot(false);setFS(false);}}>← Terug naar inloggen</span></p>
+            <AuthError msg={forgotErr}/>
+            {forgotSent
+              ?<AuthSuccess msg="Resetlink verstuurd! Check je inbox 📧"/>
+              :(<>
+                  <p style={{fontSize:13,color:C.sub}}>Vul je e-mailadres in voor een resetlink.</p>
+                  <AF icon={<Mail size={18}/>}><input className="auth-bare" placeholder="E-mailadres" type="email" value={forgotEmail} onChange={e=>setFE(e.target.value)}/></AF>
+                  <button className="btn-auth" onClick={sendReset} disabled={busy||!forgotEmail}>{busy?"Versturen…":"Resetlink versturen"}</button>
+                </>)
+            }
+            <p style={{textAlign:"center",fontSize:13,color:C.sub}}><span className="link" onClick={()=>{setForgot(false);setFS(false);setForgotErr("");}}>← Terug naar inloggen</span></p>
           </>
         )}
       </div>
@@ -596,22 +627,32 @@ function LoginScreen({onLogin,onSwitch,onForgot}:any){
   );
 }
 
-// ─── Register screen (GEFIXED) ────────────────────────────────────────────────
+// ─── Register screen ──────────────────────────────────────────────────────────
 function RegisterScreen({onRegister,onSwitch}:any){
   const [f,setF]=useState({full_name:"",email:"",password:"",level:"Gemiddeld",location:"Middelburg",knltb_rating:""});
-  const [busy,setBusy]=useState(false); const [step,setStep]=useState(1); const [confirmed,setConfirmed]=useState(false);
+  const [busy,setBusy]=useState(false); const [step,setStep]=useState(1);
+  const [confirmed,setConfirmed]=useState(false); const [err,setErr]=useState("");
   const set=(k:string)=>(e:any)=>setF(p=>({...p,[k]:e.target.value}));
 
+  const validateStep1 = () => {
+    if (!f.full_name.trim()) return "Vul je volledige naam in.";
+    if (!f.email.includes("@")) return "Vul een geldig e-mailadres in.";
+    if (f.password.length<6) return "Wachtwoord moet minimaal 6 tekens zijn.";
+    return "";
+  };
+
   const go = async () => {
+    const v=validateStep1();
+    if (v){ setErr(v); return; }
     if (busy) return;
-    setBusy(true);
+    setBusy(true); setErr("");
     try {
       const result = await onRegister(f);
-      if (result==="confirm") { setConfirmed(true); }
-      // als "ok" is de auth state change al getriggerd en wordt home getoond
-    } finally {
-      setBusy(false);
-    }
+      if (result==="confirm"){ setConfirmed(true); }
+      else if (result==="ok"){ /* auth state change handelt het af */ }
+      else { setErr(typeof result==="string"?result:"Er ging iets mis. Probeer opnieuw."); }
+    } catch(e:any){ setErr(e.message||"Onbekende fout"); }
+    finally { setBusy(false); }
   };
 
   if (confirmed) return (
@@ -619,33 +660,32 @@ function RegisterScreen({onRegister,onSwitch}:any){
       <div style={s.authCard}>
         <div style={{textAlign:"center",fontSize:56,marginBottom:8}}>📧</div>
         <h2 style={{...s.authTitle,fontSize:20}}>Check je e-mail!</h2>
-        <div style={{background:"#dcfce7",borderRadius:12,padding:16,textAlign:"center",fontSize:13,color:"#166534",lineHeight:1.6}}>
-          We hebben een bevestigingslink gestuurd naar <strong>{f.email}</strong>.<br/>Klik op de link om je account te activeren.
-        </div>
+        <AuthSuccess msg={`Bevestigingslink verstuurd naar ${f.email}`}/>
+        <p style={{fontSize:13,color:C.sub,textAlign:"center",lineHeight:1.5}}>Klik op de link in je inbox om je account te activeren. Daarna kun je inloggen.</p>
         <button className="btn-auth" onClick={onSwitch}>Naar inloggen</button>
       </div>
     </div>
   );
-
   return (
     <div style={s.authWrap}><div style={s.authBg}/>
       <div style={s.authCard}>
         <div style={{textAlign:"center"}}>
-          <div style={{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 8px"}}><PadelLogo size={36}/></div>
+          <div style={{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 8px",overflow:"hidden",padding:5}}>
+            <img src="/Gemini_Generated_Image_jjvfrsjjvfrsjjvf.png" alt="Logo" style={{width:"100%",height:"100%",objectFit:"contain",filter:"brightness(0) invert(1)"}} onError={(e:any)=>e.target.style.display="none"}/>
+          </div>
           <h1 style={s.authTitle}>Account aanmaken</h1>
           <p style={s.authSub}>Stap {step} van 2</p>
         </div>
         <div style={{display:"flex",gap:6}}>
           {[1,2].map(i=><div key={i} style={{flex:1,height:4,borderRadius:4,background:i<=step?C.sea:"#e2e8f0",transition:"background .3s"}}/>)}
         </div>
+        <AuthError msg={err}/>
         {step===1?(
           <>
-            <AuthField icon={<User size={18}/>}><input className="auth-bare" placeholder="Volledige naam" value={f.full_name} onChange={set("full_name")}/></AuthField>
-            <AuthField icon={<Mail size={18}/>}><input className="auth-bare" placeholder="E-mailadres" type="email" value={f.email} onChange={set("email")}/></AuthField>
-            <AuthField icon={<Lock size={18}/>}><input className="auth-bare" placeholder="Wachtwoord (min. 6 tekens)" type="password" value={f.password} onChange={set("password")}/></AuthField>
-            <button className="btn-auth"
-              disabled={!f.full_name.trim()||!f.email.trim()||f.password.length<6}
-              onClick={()=>setStep(2)}>
+            <AF icon={<User size={18}/>}><input className="auth-bare" placeholder="Volledige naam" value={f.full_name} onChange={set("full_name")}/></AF>
+            <AF icon={<Mail size={18}/>}><input className="auth-bare" placeholder="E-mailadres" type="email" value={f.email} onChange={set("email")}/></AF>
+            <AF icon={<Lock size={18}/>}><input className="auth-bare" placeholder="Wachtwoord (min. 6 tekens)" type="password" value={f.password} onChange={e=>setF(p=>({...p,password:e.target.value}))}/></AF>
+            <button className="btn-auth" onClick={()=>{ const v=validateStep1(); if(v){setErr(v);return;} setErr(""); setStep(2); }}>
               Volgende →
             </button>
             <div style={{textAlign:"center",fontSize:13,color:C.sub}}>Al een account? <span className="link" onClick={onSwitch}>Inloggen</span></div>
@@ -655,7 +695,7 @@ function RegisterScreen({onRegister,onSwitch}:any){
             <div>
               <label style={s.regLbl}>Speelniveau</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:4}}>
-                {LEVELS.map(l=><button key={l} onClick={()=>setF(p=>({...p,level:l}))} style={{padding:"7px 10px",borderRadius:20,fontSize:12,fontWeight:700,border:"2px solid",cursor:"pointer",background:f.level===l?C.sea:"#fff",color:f.level===l?"#fff":C.dark,borderColor:f.level===l?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{LEVEL_LABELS[l]||l}</button>)}
+                {LEVELS.map(l=><button key={l} type="button" onClick={()=>setF(p=>({...p,level:l}))} style={{padding:"7px 10px",borderRadius:20,fontSize:12,fontWeight:700,border:"2px solid",cursor:"pointer",background:f.level===l?C.sea:"#fff",color:f.level===l?"#fff":C.dark,borderColor:f.level===l?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{LEVEL_LABELS[l]||l}</button>)}
               </div>
             </div>
             <div>
@@ -667,8 +707,8 @@ function RegisterScreen({onRegister,onSwitch}:any){
               <select className="inp" value={f.location} onChange={set("location")}>{LOCATIONS.map(l=><option key={l}>{l}</option>)}</select>
             </div>
             <div style={{display:"flex",gap:8}}>
-              <button className="btn-auth-outline" onClick={()=>setStep(1)}>← Terug</button>
-              <button className="btn-auth" style={{flex:2}} onClick={go} disabled={busy}>{busy?"Aanmaken…":"Account aanmaken ✓"}</button>
+              <button type="button" className="btn-auth-outline" onClick={()=>{ setStep(1); setErr(""); }}>← Terug</button>
+              <button type="button" className="btn-auth" style={{flex:2}} onClick={go} disabled={busy}>{busy?"Aanmaken…":"Account aanmaken ✓"}</button>
             </div>
           </>
         )}
@@ -685,8 +725,8 @@ function OnboardScreen({onOnboard}:any){
   return (
     <div style={s.authWrap}><div style={s.authBg}/>
       <div style={s.authCard}>
-        <div style={{textAlign:"center"}}><div style={{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 8px"}}><PadelLogo size={36}/></div><h1 style={s.authTitle}>Bijna klaar!</h1><p style={s.authSub}>Stel je padelerprofiel in</p></div>
-        <div><label style={s.regLbl}>Speelniveau</label><div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:4}}>{LEVELS.map(l=><button key={l} onClick={()=>setF(p=>({...p,level:l}))} style={{padding:"7px 10px",borderRadius:20,fontSize:12,fontWeight:700,border:"2px solid",cursor:"pointer",background:f.level===l?C.sea:"#fff",color:f.level===l?"#fff":C.dark,borderColor:f.level===l?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{LEVEL_LABELS[l]||l}</button>)}</div></div>
+        <div style={{textAlign:"center"}}><h1 style={s.authTitle}>Bijna klaar! 🎾</h1><p style={s.authSub}>Stel je padelerprofiel in</p></div>
+        <div><label style={s.regLbl}>Speelniveau</label><div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:4}}>{LEVELS.map(l=><button key={l} type="button" onClick={()=>setF(p=>({...p,level:l}))} style={{padding:"7px 10px",borderRadius:20,fontSize:12,fontWeight:700,border:"2px solid",cursor:"pointer",background:f.level===l?C.sea:"#fff",color:f.level===l?"#fff":C.dark,borderColor:f.level===l?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{LEVEL_LABELS[l]||l}</button>)}</div></div>
         <div><label style={s.regLbl}>KNLTB Rating <span style={{color:C.sub,fontWeight:400}}>(optioneel)</span></label><select className="inp" value={f.knltb_rating} onChange={e=>setF(p=>({...p,knltb_rating:e.target.value}))}><option value="">Geen / onbekend</option>{KNLTB_RATINGS.map(r=><option key={r} value={r}>{r}</option>)}</select></div>
         <div><label style={s.regLbl}>Woonplaats</label><select className="inp" value={f.location} onChange={e=>setF(p=>({...p,location:e.target.value}))}>{LOCATIONS.map(l=><option key={l}>{l}</option>)}</select></div>
         <button className="btn-auth" onClick={go} disabled={busy}>{busy?"Opslaan…":"Profiel opslaan"}</button>
@@ -746,10 +786,7 @@ function MatchesScreen({openMatches,allMatches,sbUser,joinMatch,onOpen,getCount,
           {showF&&(
             <div style={s.filterBox}>
               <p style={s.filterLabel}>Club zoeken</p>
-              <div style={{display:"flex",gap:8,marginBottom:10}}>
-                <input className="inp-sm" placeholder="Naam van de club…" value={filterClub} onChange={e=>setFilterClub(e.target.value)} style={{flex:1}}/>
-                {filterClub&&<button style={s.clearBtn} onClick={()=>setFilterClub("")}><X size={13}/></button>}
-              </div>
+              <div style={{display:"flex",gap:8,marginBottom:10}}><input className="inp-sm" placeholder="Naam van de club…" value={filterClub} onChange={e=>setFilterClub(e.target.value)} style={{flex:1}}/>{filterClub&&<button style={s.clearBtn} onClick={()=>setFilterClub("")}><X size={13}/></button>}</div>
               <p style={s.filterLabel}>Locatie</p>
               <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
                 <select className="inp-sm" value={filterCity} onChange={e=>setFilterCity(e.target.value)} style={{flex:1}}><option value="">Alle plaatsen</option>{LOCATIONS.map(l=><option key={l}>{l}</option>)}</select>
@@ -788,8 +825,6 @@ function MyMatchesTab({sbUser,allMatches,getCount,onOpen}:any){
     </div>
   ));
 }
-
-// ─── Match card ───────────────────────────────────────────────────────────────
 function MatchCard({match:m,sbUser,cnt,onJoin,onOpen,compact}:any){
   const lc=LEVEL_COLOR[m.level]||C.sub;
   return (
@@ -813,8 +848,6 @@ function MatchCard({match:m,sbUser,cnt,onJoin,onOpen,compact}:any){
     </div>
   );
 }
-
-// ─── Booked badge ─────────────────────────────────────────────────────────────
 function BookedBadge({booked,courtNumber,small}:any){
   const sz=small?10:12;
   if (booked) return <span style={{fontSize:sz,background:"#dcfce7",color:"#16a34a",padding:"2px 7px",borderRadius:8,fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><CheckCircle size={sz}/>Baan geboekt{courtNumber&&<span style={{background:"#16a34a",color:"#fff",borderRadius:6,padding:"0 5px",marginLeft:2,fontWeight:800}}>#{courtNumber}</span>}</span>;
@@ -830,9 +863,16 @@ function MatchDetailScreen({match:m,sbUser,cnt,onJoin,onLeave,onCancel,onChat,on
       .then(({data,error}:any)=>{ if (!error&&data){ setParts(data); setIsP(data.some((p:any)=>p.user_id===sbUser?.id)); }});
   },[m.id,cnt]);
   return (
-    <div style={s.subRoot}><style>{css}</style>
-      <div style={s.backHdr}><button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button><strong style={{fontSize:15,color:"#fff"}}>Partijtje</strong><div style={{width:70}}/></div>
-      <div style={{...s.page,paddingTop:14,paddingBottom:32}}>
+    // BREEDTE FIX: zelfde structuur als main app
+    <div style={s.appShell}><style>{css}</style>
+      <div style={s.backHdr}>
+        <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"}}>
+          <button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button>
+          <strong style={{fontSize:15,color:"#fff"}}>Partijtje</strong>
+          <div style={{width:70}}/>
+        </div>
+      </div>
+      <div style={{maxWidth:APP_MAX_W,margin:"0 auto",padding:"14px 14px 32px"}}>
         <div style={s.detailCard}>
           {m.level&&<div style={{...s.lvlBadge,background:lc+"22",color:lc,marginBottom:10,display:"inline-flex"}}>{m.level}</div>}
           <h2 style={{fontSize:18,fontWeight:800,color:C.dark,marginBottom:8}}>{m.courts?.name}</h2>
@@ -841,7 +881,6 @@ function MatchDetailScreen({match:m,sbUser,cnt,onJoin,onLeave,onCancel,onChat,on
             {m.courts?.address&&<div style={{fontSize:13,color:C.sub,display:"flex",alignItems:"center",gap:6}}><MapPin size={13}/>{m.courts.address}, {m.courts.city}</div>}
             <div style={{fontSize:13,color:C.sub,display:"flex",alignItems:"center",gap:6}}><User size={13}/>Host: <strong style={{color:C.dark}}>{displayName(m.host)}</strong></div>
           </div>
-          {/* Alle deelnemers kunnen boeking aanpassen */}
           {isP&&!past?(
             <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:8}}>
               <button onClick={()=>onToggleBooked(!m.court_booked)} style={{fontSize:13,padding:"10px 14px",borderRadius:12,fontWeight:700,border:"2px solid",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,background:m.court_booked?"#dcfce7":"#fff7ed",color:m.court_booked?"#16a34a":"#c2410c",borderColor:m.court_booked?"#16a34a":"#c2410c",width:"100%",fontFamily:"inherit"}}>
@@ -850,18 +889,12 @@ function MatchDetailScreen({match:m,sbUser,cnt,onJoin,onLeave,onCancel,onChat,on
               {m.court_booked&&(
                 <div style={{background:"#f0f9ff",borderRadius:12,padding:"12px 14px"}}>
                   <p style={{fontSize:12,fontWeight:700,color:C.dark,marginBottom:8,display:"flex",alignItems:"center",gap:5}}><Hash size={13} color={C.sea}/>Op welke baan spelen jullie?</p>
-                  <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                    {[1,2,3,4,5,6,7,8,9].map(n=>(
-                      <button key={n} onClick={()=>onSetCourtNumber(m.court_number===n?null:n)} style={{width:38,height:38,borderRadius:10,border:"2px solid",cursor:"pointer",fontWeight:800,fontSize:15,background:m.court_number===n?C.sea:"#fff",color:m.court_number===n?"#fff":C.dark,borderColor:m.court_number===n?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{n}</button>
-                    ))}
-                  </div>
+                  <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{[1,2,3,4,5,6,7,8,9].map(n=><button key={n} onClick={()=>onSetCourtNumber(m.court_number===n?null:n)} style={{width:38,height:38,borderRadius:10,border:"2px solid",cursor:"pointer",fontWeight:800,fontSize:15,background:m.court_number===n?C.sea:"#fff",color:m.court_number===n?"#fff":C.dark,borderColor:m.court_number===n?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{n}</button>)}</div>
                   {m.court_number&&<p style={{fontSize:12,color:C.green,fontWeight:700,marginTop:8,display:"flex",alignItems:"center",gap:4}}><Check size={12}/>Jullie spelen op baan #{m.court_number}</p>}
                 </div>
               )}
             </div>
-          ):(
-            <div style={{marginBottom:8}}><BookedBadge booked={m.court_booked} courtNumber={m.court_number}/></div>
-          )}
+          ):<div style={{marginBottom:8}}><BookedBadge booked={m.court_booked} courtNumber={m.court_number}/></div>}
           {m.courts?.booking_url&&<a href={m.courts.booking_url} target="_blank" rel="noopener noreferrer" style={{fontSize:12,background:C.sea+"22",color:C.sea,padding:"6px 12px",borderRadius:10,fontWeight:700,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,marginTop:4}}><MapPin size={12}/>Boek baan online</a>}
           {m.description&&<div style={{...s.detailNote,marginTop:10}}>"{m.description}"</div>}
         </div>
@@ -888,39 +921,67 @@ function MatchDetailScreen({match:m,sbUser,cnt,onJoin,onLeave,onCancel,onChat,on
   );
 }
 
-// ─── Group chat ───────────────────────────────────────────────────────────────
+// ─── Chat helpers (GEFIXED: laad berichten na verzenden) ──────────────────────
+function ChatBubble({msg,mine,senderName}:any){
+  const ts=msg.created_at?new Date(msg.created_at).toLocaleTimeString("nl-NL",{hour:"2-digit",minute:"2-digit"}):"";
+  return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
+      {!mine&&<span style={{fontSize:11,color:C.sub,marginBottom:2,marginLeft:4}}>{senderName}</span>}
+      <div style={{maxWidth:"78%",padding:"9px 13px",borderRadius:14,fontSize:14,lineHeight:1.4,background:mine?C.sea:"#fff",color:mine?"#fff":C.dark,borderBottomRightRadius:mine?2:14,borderBottomLeftRadius:mine?14:2,boxShadow:"0 1px 4px rgba(0,0,0,.08)"}}>{msg.content}</div>
+      <span style={{fontSize:10,color:C.sub,marginTop:2}}>{ts}</span>
+    </div>
+  );
+}
+
+// ─── Group chat (GEFIXED: berichten tonen direct na verzenden) ─────────────────
 function ChatScreen({match:m,sbUser,onBack,toast$,addNotif}:any){
   const [messages,setMessages]=useState<any[]>([]); const [text,setText]=useState(""); const [loading,setLoading]=useState(true); const endRef=useRef<any>(null);
-  const loadMsgs=useCallback(async()=>{ const {data}:any=await sb.from("messages").select("*,profiles!messages_sender_id_fkey(full_name,username,avatar_url)").eq("match_id",m.id).order("created_at",{ascending:true}); if (data) setMessages(data); setLoading(false); },[m.id]);
+  const loadMsgs=useCallback(async()=>{
+    const {data}:any=await sb.from("messages").select("*,profiles!messages_sender_id_fkey(full_name,username,avatar_url)").eq("match_id",m.id).order("created_at",{ascending:true});
+    if (data) setMessages(data); setLoading(false);
+  },[m.id]);
   useEffect(()=>{ loadMsgs(); },[loadMsgs]);
-  useEffect(()=>{ const ch=sb.channel(`chat-${m.id}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:`match_id=eq.${m.id}`},(pl:any)=>{ loadMsgs(); if (pl.new?.sender_id!==sbUser?.id) addNotif?.(`💬 Nieuw bericht in ${m.courts?.name}`,"💬",{type:"chat",matchId:m.id}); }).subscribe(); return ()=>sb.removeChannel(ch); },[m.id,loadMsgs,sbUser?.id,addNotif]);
+  useEffect(()=>{
+    const ch=sb.channel(`chat-${m.id}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:`match_id=eq.${m.id}`},(pl:any)=>{
+      loadMsgs(); // Laad voor iedereen (ook verzender)
+      if (pl.new?.sender_id!==sbUser?.id) addNotif?.(`💬 Nieuw bericht in ${m.courts?.name}`,"💬",{type:"chat",matchId:m.id});
+    }).subscribe();
+    return ()=>sb.removeChannel(ch);
+  },[m.id,loadMsgs,sbUser?.id,addNotif]);
   useEffect(()=>{ endRef.current?.scrollIntoView({behavior:"smooth"}); },[messages]);
-  const send=async()=>{ if (!text.trim()) return; const msg=text.trim(); setText(""); await sb.from("messages").insert({match_id:m.id,sender_id:sbUser.id,content:msg}); };
-  const fmtTs=(ts:string)=>ts?new Date(ts).toLocaleTimeString("nl-NL",{hour:"2-digit",minute:"2-digit"}):"";
+  const send=async()=>{
+    if (!text.trim()) return;
+    const msg=text.trim(); setText("");
+    const {error}=await sb.from("messages").insert({match_id:m.id,sender_id:sbUser.id,content:msg});
+    if (error) toast$(error.message,"error");
+    else loadMsgs(); // Direct herladen na verzenden
+  };
   return (
-    <div style={{...s.subRoot,display:"flex",flexDirection:"column",height:"100dvh",paddingBottom:0}}><style>{css}</style>
-      <div style={s.backHdr}><button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button><div style={{textAlign:"center"}}><strong style={{fontSize:14,color:"#fff"}}>{m.courts?.name}</strong><div style={{fontSize:11,color:"rgba(255,255,255,.6)"}}>{fmtDate(m.date)} · {m.start_time?.slice(0,5)}</div></div><div style={{width:70}}/></div>
-      <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:8,background:C.bg}}>
+    <div style={{...s.appShell,display:"flex",flexDirection:"column",height:"100dvh"}}><style>{css}</style>
+      <div style={s.backHdr}>
+        <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"}}>
+          <button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button>
+          <div style={{textAlign:"center"}}><strong style={{fontSize:14,color:"#fff"}}>{m.courts?.name}</strong><div style={{fontSize:11,color:"rgba(255,255,255,.6)"}}>{fmtDate(m.date)} · {m.start_time?.slice(0,5)}</div></div>
+          <div style={{width:70}}/>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:8,background:C.bg,maxWidth:APP_MAX_W,margin:"0 auto",width:"100%"}}>
         {loading&&<Spinner/>}
         {!loading&&messages.length===0&&<div style={s.emptyState}><MessageSquare size={36} color="#cbd5e1"/><p style={{fontSize:14,color:C.sub,marginTop:8}}>Nog geen berichten</p></div>}
-        {messages.map((msg:any)=>{ const mine=msg.sender_id===sbUser?.id; return (
-          <div key={msg.id} style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
-            {!mine&&<span style={{fontSize:11,color:C.sub,marginBottom:2,marginLeft:4}}>{displayName(msg.profiles)}</span>}
-            <div style={{maxWidth:"78%",padding:"9px 13px",borderRadius:14,fontSize:14,lineHeight:1.4,background:mine?C.sea:"#fff",color:mine?"#fff":C.dark,borderBottomRightRadius:mine?2:14,borderBottomLeftRadius:mine?14:2,boxShadow:"0 1px 4px rgba(0,0,0,.08)"}}>{msg.content}</div>
-            <span style={{fontSize:10,color:C.sub,marginTop:2}}>{fmtTs(msg.created_at)}</span>
-          </div>
-        );})}
+        {messages.map((msg:any)=><ChatBubble key={msg.id} msg={msg} mine={msg.sender_id===sbUser?.id} senderName={displayName(msg.profiles)}/>)}
         <div ref={endRef}/>
       </div>
-      <div style={{display:"flex",gap:8,padding:"10px 12px",paddingBottom:"max(10px,env(safe-area-inset-bottom))",background:"#fff",borderTop:"1px solid #e2e8f0"}}>
-        <input className="inp" placeholder="Typ een bericht…" value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} style={{flex:1}}/>
-        <button style={{width:42,height:42,borderRadius:"50%",background:C.sea,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={send}><Send size={18} color="#fff"/></button>
+      <div style={{background:"#fff",borderTop:"1px solid #e2e8f0",padding:"10px 12px",paddingBottom:"max(10px,env(safe-area-inset-bottom))"}}>
+        <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",gap:8}}>
+          <input className="inp" placeholder="Typ een bericht…" value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} style={{flex:1}}/>
+          <button style={{width:42,height:42,borderRadius:"50%",background:C.sea,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}} onClick={send}><Send size={18} color="#fff"/></button>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Direct message chat tussen vrienden ──────────────────────────────────────
+// ─── Direct message (GEFIXED) ─────────────────────────────────────────────────
 function DirectMessageScreen({friendId,sbUser,onBack,toast$}:any){
   const [friend,setFriend]=useState<any>(null); const [messages,setMessages]=useState<any[]>([]); const [text,setText]=useState(""); const [loading,setLoading]=useState(true); const endRef=useRef<any>(null);
   useEffect(()=>{ sb.from("profiles").select("*").eq("id",friendId).single().then(({data}:any)=>setFriend(data)); },[friendId]);
@@ -929,50 +990,64 @@ function DirectMessageScreen({friendId,sbUser,onBack,toast$}:any){
     if (data) setMessages(data); setLoading(false);
   },[sbUser.id,friendId]);
   useEffect(()=>{ loadMsgs(); },[loadMsgs]);
-  useEffect(()=>{ const ch=sb.channel(`dm-${[sbUser.id,friendId].sort().join("-")}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages"},()=>loadMsgs()).subscribe(); return ()=>sb.removeChannel(ch); },[loadMsgs,sbUser.id,friendId]);
+  useEffect(()=>{
+    const ch=sb.channel(`dm-${[sbUser.id,friendId].sort().join("-")}`).on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages"},()=>loadMsgs()).subscribe();
+    return ()=>sb.removeChannel(ch);
+  },[loadMsgs,sbUser.id,friendId]);
   useEffect(()=>{ endRef.current?.scrollIntoView({behavior:"smooth"}); },[messages]);
-  const send=async()=>{ if (!text.trim()) return; const msg=text.trim(); setText(""); await sb.from("direct_messages").insert({sender_id:sbUser.id,receiver_id:friendId,content:msg}); };
-  const fmtTs=(ts:string)=>ts?new Date(ts).toLocaleTimeString("nl-NL",{hour:"2-digit",minute:"2-digit"}):"";
+  const send=async()=>{
+    if (!text.trim()) return; const msg=text.trim(); setText("");
+    const {error}=await sb.from("direct_messages").insert({sender_id:sbUser.id,receiver_id:friendId,content:msg});
+    if (error) toast$(error.message,"error"); else loadMsgs();
+  };
   return (
-    <div style={{...s.subRoot,display:"flex",flexDirection:"column",height:"100dvh",paddingBottom:0}}><style>{css}</style>
-      <div style={s.backHdr}><button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button><div style={{textAlign:"center"}}><strong style={{fontSize:14,color:"#fff"}}>{friend?displayName(friend):"…"}</strong><div style={{fontSize:11,color:"rgba(255,255,255,.6)"}}>Directe chat</div></div><div style={{width:70}}/></div>
-      <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:8,background:C.bg}}>
+    <div style={{...s.appShell,display:"flex",flexDirection:"column",height:"100dvh"}}><style>{css}</style>
+      <div style={s.backHdr}>
+        <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"}}>
+          <button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button>
+          <div style={{textAlign:"center"}}><strong style={{fontSize:14,color:"#fff"}}>{friend?displayName(friend):"…"}</strong><div style={{fontSize:11,color:"rgba(255,255,255,.6)"}}>Directe chat</div></div>
+          <div style={{width:70}}/>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:8,background:C.bg,maxWidth:APP_MAX_W,margin:"0 auto",width:"100%"}}>
         {loading&&<Spinner/>}
         {!loading&&messages.length===0&&<div style={s.emptyState}><MessageSquare size={36} color="#cbd5e1"/><p style={{fontSize:14,color:C.sub,marginTop:8}}>Start het gesprek! 👋</p></div>}
-        {messages.map((msg:any)=>{ const mine=msg.sender_id===sbUser.id; return (
-          <div key={msg.id} style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
-            <div style={{maxWidth:"78%",padding:"9px 13px",borderRadius:14,fontSize:14,lineHeight:1.4,background:mine?C.sea:"#fff",color:mine?"#fff":C.dark,borderBottomRightRadius:mine?2:14,borderBottomLeftRadius:mine?14:2,boxShadow:"0 1px 4px rgba(0,0,0,.08)"}}>{msg.content}</div>
-            <span style={{fontSize:10,color:C.sub,marginTop:2}}>{fmtTs(msg.created_at)}</span>
-          </div>
-        );})}
+        {messages.map((msg:any)=><ChatBubble key={msg.id} msg={msg} mine={msg.sender_id===sbUser.id} senderName={friend?displayName(friend):"Vriend"}/>)}
         <div ref={endRef}/>
       </div>
-      <div style={{display:"flex",gap:8,padding:"10px 12px",paddingBottom:"max(10px,env(safe-area-inset-bottom))",background:"#fff",borderTop:"1px solid #e2e8f0"}}>
-        <input className="inp" placeholder="Typ een bericht…" value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} style={{flex:1}}/>
-        <button style={{width:42,height:42,borderRadius:"50%",background:C.sea,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={send}><Send size={18} color="#fff"/></button>
+      <div style={{background:"#fff",borderTop:"1px solid #e2e8f0",padding:"10px 12px",paddingBottom:"max(10px,env(safe-area-inset-bottom))"}}>
+        <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",gap:8}}>
+          <input className="inp" placeholder="Typ een bericht…" value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} style={{flex:1}}/>
+          <button style={{width:42,height:42,borderRadius:"50%",background:C.sea,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}} onClick={send}><Send size={18} color="#fff"/></button>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Friend profile screen ────────────────────────────────────────────────────
+// ─── Friend profile ───────────────────────────────────────────────────────────
 function FriendProfileScreen({friendId,sbUser,onBack,onChat,toast$}:any){
-  const [fr,setFr]=useState<any>(null); const [matches,setMatches]=useState<any[]>([]);
+  const [fr,setFr]=useState<any>(null); const [recentMatches,setRecentMatches]=useState<any[]>([]);
   useEffect(()=>{
     sb.from("profiles").select("*").eq("id",friendId).single().then(({data}:any)=>setFr(data));
     sb.from("participants").select("match_id").eq("user_id",friendId).then(async({data}:any)=>{
-      if (!data||data.length===0) return;
-      const ids=data.map((r:any)=>r.match_id);
-      const {data:mData}:any=await sb.from("matches").select("*,courts(name,city)").in("id",ids).eq("is_cancelled",false).order("date",{ascending:false}).limit(5);
-      if (mData) setMatches(mData);
+      if (!data||!data.length) return;
+      const {data:mData}:any=await sb.from("matches").select("*,courts(name,city)").in("id",data.map((r:any)=>r.match_id)).eq("is_cancelled",false).order("date",{ascending:false}).limit(5);
+      if (mData) setRecentMatches(mData);
     });
   },[friendId]);
-  if (!fr) return <div style={s.subRoot}><style>{css}</style><div style={s.backHdr}><button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button><strong style={{color:"#fff"}}>Profiel</strong><div style={{width:70}}/></div><Spinner/></div>;
+  if (!fr) return <div style={s.appShell}><style>{css}</style><div style={s.backHdr}><div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"}}><button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button><strong style={{color:"#fff"}}>Profiel</strong><div style={{width:70}}/></div></div><Spinner/></div>;
   const lvl=levelText(fr.level);
   return (
-    <div style={s.subRoot}><style>{css}</style>
-      <div style={s.backHdr}><button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button><strong style={{fontSize:15,color:"#fff"}}>Profiel</strong><div style={{width:70}}/></div>
-      <div style={{...s.page,paddingTop:14,paddingBottom:32}}>
+    <div style={s.appShell}><style>{css}</style>
+      <div style={s.backHdr}>
+        <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"}}>
+          <button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button>
+          <strong style={{fontSize:15,color:"#fff"}}>Profiel</strong>
+          <div style={{width:70}}/>
+        </div>
+      </div>
+      <div style={{maxWidth:APP_MAX_W,margin:"0 auto",padding:"14px 14px 32px"}}>
         <div style={{textAlign:"center",padding:"8px 0 18px"}}>
           <div style={{...s.profileAva,margin:"0 auto 10px"}}>{fr.avatar_url?<img src={fr.avatar_url} alt="" style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}}/>:<span style={{color:"#fff",fontSize:26,fontWeight:800}}>{initials(fr)}</span>}</div>
           <h2 style={{fontSize:21,fontWeight:800,color:C.dark,margin:"0 0 4px"}}>{displayName(fr)}</h2>
@@ -982,33 +1057,39 @@ function FriendProfileScreen({friendId,sbUser,onBack,onChat,toast$}:any){
           {fr.knltb_rating&&<div style={{fontSize:13,fontWeight:700,color:C.sea,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}><Trophy size={14}/>KNLTB {fr.knltb_rating}</div>}
           {fr.bio&&<p style={{fontSize:13,color:C.sub,marginTop:8,fontStyle:"italic"}}>"{fr.bio}"</p>}
         </div>
-        <button className="btn-primary" style={{marginBottom:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={onChat}><MessageSquare size={16}/>Stuur bericht</button>
-        {matches.length>0&&(
-          <>
-            <h3 style={{...s.secTitle,marginBottom:8}}>Recente partijtjes</h3>
-            {matches.map((m:any)=>(
-              <div key={m.id} style={{background:"#fff",borderRadius:12,padding:"10px 13px",marginBottom:8,boxShadow:"0 1px 6px rgba(0,0,0,.06)"}}>
-                <div style={{fontWeight:700,fontSize:13,color:C.dark}}>{m.courts?.name||"Onbekende baan"}</div>
-                <div style={{fontSize:12,color:C.sub,marginTop:2,display:"flex",alignItems:"center",gap:5}}><Calendar size={11}/>{fmtDate(m.date)}</div>
-              </div>
-            ))}
-          </>
-        )}
+        <button className="btn-primary" style={{marginBottom:16,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={onChat}><MessageSquare size={16}/>Stuur bericht</button>
+        {recentMatches.length>0&&(<>
+          <h3 style={{...s.secTitle,marginBottom:8}}>Recente partijtjes</h3>
+          {recentMatches.map((m:any)=>(
+            <div key={m.id} style={{background:"#fff",borderRadius:12,padding:"10px 13px",marginBottom:8,boxShadow:"0 1px 6px rgba(0,0,0,.06)"}}>
+              <div style={{fontWeight:700,fontSize:13,color:C.dark}}>{m.courts?.name||"Onbekende baan"}</div>
+              <div style={{fontSize:12,color:C.sub,marginTop:2,display:"flex",alignItems:"center",gap:5}}><Calendar size={11}/>{fmtDate(m.date)}</div>
+            </div>
+          ))}
+        </>)}
       </div>
     </div>
   );
 }
 
-// ─── Create screen ────────────────────────────────────────────────────────────
+// ─── Create screen (GEFIXED: vrienden worden echt toegevoegd) ─────────────────
 function CreateScreen({courts,onCreate,sbUser}:any){
   const initTime=defaultFutureTime();
   const [f,setF]=useState({courtId:"",date:today(),time:initTime,level:"Gemiddeld",note:"",court_booked:false});
-  const [busy,setBusy]=useState(false); const [friends,setFriends]=useState<any[]>([]);
+  const [busy,setBusy]=useState(false); const [friends,setFriends]=useState<any[]>([]); const [invitedIds,setInvitedIds]=useState<string[]>([]);
   const set=(k:string)=>(e:any)=>setF(p=>({...p,[k]:e.target.value}));
   const court=courts.find((c:any)=>String(c.id)===String(f.courtId));
   const timeValid=isMatchTimeValid(f.date,f.time);
-  useEffect(()=>{ if (!sbUser) return; sb.from("friendships").select("friend_id,profiles!friendships_friend_id_fkey(id,full_name,username,avatar_url)").eq("user_id",sbUser.id).eq("status","accepted").then(({data}:any)=>{ if (data) setFriends(data.map((r:any)=>r.profiles).filter(Boolean)); }); },[sbUser]);
-  const go=async()=>{ if (!f.courtId||!timeValid) return; setBusy(true); await onCreate({...f}); setBusy(false); };
+  useEffect(()=>{
+    if (!sbUser) return;
+    sb.from("friendships").select("friend_id,profiles!friendships_friend_id_fkey(id,full_name,username,avatar_url)").eq("user_id",sbUser.id).eq("status","accepted")
+      .then(({data}:any)=>{ if (data) setFriends(data.map((r:any)=>r.profiles).filter(Boolean)); });
+  },[sbUser]);
+  const toggleInvite=(id:string)=>setInvitedIds(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+  const go=async()=>{
+    if (!f.courtId||!timeValid) return; setBusy(true);
+    await onCreate({...f,invitedFriends:invitedIds}); setBusy(false);
+  };
   return (
     <div style={s.page}><h2 style={s.pageTitle}>Partijtje aanmaken</h2>
       <div style={s.formCard}>
@@ -1019,33 +1100,39 @@ function CreateScreen({courts,onCreate,sbUser}:any){
         <input className="inp" type="time" value={f.time} onChange={set("time")} style={{borderColor:f.time&&!timeValid?"#ef4444":undefined}}/>
         {f.time&&!timeValid&&<div style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.red,marginTop:-4}}><AlertTriangle size={13}/>Min. 2 uur in de toekomst</div>}
         <label style={s.lbl}>Niveau</label>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {LEVELS.map(l=><button key={l} onClick={()=>setF(p=>({...p,level:l}))} style={{padding:"6px 10px",borderRadius:16,fontSize:12,fontWeight:700,border:"1.5px solid",cursor:"pointer",background:f.level===l?C.sea:"#fff",color:f.level===l?"#fff":C.dark,borderColor:f.level===l?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{LEVEL_LABELS[l]||l}</button>)}
-        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{LEVELS.map(l=><button key={l} type="button" onClick={()=>setF(p=>({...p,level:l}))} style={{padding:"6px 10px",borderRadius:16,fontSize:12,fontWeight:700,border:"1.5px solid",cursor:"pointer",background:f.level===l?C.sea:"#fff",color:f.level===l?"#fff":C.dark,borderColor:f.level===l?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{LEVEL_LABELS[l]||l}</button>)}</div>
         <div style={{background:C.bg,borderRadius:10,padding:"12px 13px"}}>
           <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontSize:13,fontWeight:700,color:C.dark}}>
             <input type="checkbox" checked={f.court_booked} onChange={e=>setF(p=>({...p,court_booked:e.target.checked}))} style={{width:17,height:17,accentColor:C.sea}}/>Ik heb de baan al geboekt
           </label>
           {court?.booking_url&&!f.court_booked&&<a href={court.booking_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:8,fontSize:12,color:C.sea,fontWeight:700,textDecoration:"none"}}><MapPin size={12}/>Boek {court.name} hier</a>}
         </div>
+        {/* Vrienden uitnodigen – worden DIRECT als deelnemer toegevoegd */}
         {friends.length>0&&(
           <div>
-            <label style={s.lbl}>Vrienden (worden geïnformeerd)</label>
+            <label style={s.lbl}>Vrienden uitnodigen (worden direct toegevoegd)</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
-              {friends.map((fr:any)=>(
-                <div key={fr.id} style={{display:"flex",alignItems:"center",gap:6,background:"#e0f2fe",borderRadius:10,padding:"5px 10px",fontSize:12,fontWeight:700,color:C.dark}}>
-                  <div style={{width:22,height:22,borderRadius:"50%",background:C.sea,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff"}}>{initials(fr)}</div>
-                  {displayName(fr)}
-                </div>
-              ))}
+              {friends.map((fr:any)=>{
+                const invited=invitedIds.includes(fr.id);
+                return (
+                  <button key={fr.id} type="button" onClick={()=>toggleInvite(fr.id)} style={{display:"flex",alignItems:"center",gap:6,borderRadius:10,padding:"5px 10px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",border:`2px solid ${invited?C.sea:"#e2e8f0"}`,background:invited?"#e0f2fe":"#fff",color:invited?C.sea:C.dark,transition:"all .15s"}}>
+                    <div style={{width:22,height:22,borderRadius:"50%",background:invited?C.sea:"#e2e8f0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:invited?"#fff":C.sub,overflow:"hidden"}}>
+                      {fr.avatar_url?<img src={fr.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:initials(fr)}
+                    </div>
+                    {displayName(fr)}
+                    {invited&&<Check size={12} color={C.sea}/>}
+                  </button>
+                );
+              })}
             </div>
+            {invitedIds.length>0&&<p style={{fontSize:12,color:C.green,marginTop:6,fontWeight:600}}>✓ {invitedIds.length} vriend{invitedIds.length>1?"en":""} worden direct toegevoegd</p>}
           </div>
         )}
         <label style={s.lbl}>Opmerking (optioneel)</label>
         <input className="inp" placeholder="Bijv. gezellig potje, beginners welkom…" value={f.note} onChange={set("note")}/>
         {court&&(<div style={s.previewCard}>
           <p style={{fontWeight:700,fontSize:13,color:C.dark,margin:"0 0 8px",display:"flex",alignItems:"center",gap:5}}><Check size={14} color={C.sea}/>Overzicht</p>
-          {[["Baan",court.name],["Datum",`${fmtDate(f.date)} om ${f.time}`],["Niveau",f.level],["Plekken","3 van 4 vrij"],["Geboekt",f.court_booked?"Ja ✓":"Nog niet"]].map(([l,v])=><p key={l} style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.sub,margin:"4px 0"}}><span>{l}</span><strong style={{color:C.dark}}>{v}</strong></p>)}
+          {[["Baan",court.name],["Datum",`${fmtDate(f.date)} om ${f.time}`],["Niveau",f.level],["Vrij","na uitnodigingen"+(invitedIds.length>0?` (${3-invitedIds.length} plekken)`:"")],["Geboekt",f.court_booked?"Ja ✓":"Nog niet"]].map(([l,v])=><p key={l} style={{display:"flex",justifyContent:"space-between",fontSize:13,color:C.sub,margin:"4px 0"}}><span>{l}</span><strong style={{color:C.dark}}>{v}</strong></p>)}
         </div>)}
         <button className="btn-primary" disabled={!f.courtId||busy||!timeValid} onClick={go}>{busy?"Aanmaken…":"Partijtje plaatsen"}</button>
       </div>
@@ -1069,9 +1156,7 @@ function CourtsMap({courts}:any){
       for (const c of courts){
         let coords:[number,number]|null=null;
         if (c.lat&&c.lng) coords=[c.lat,c.lng];
-        else if (c.address&&c.city){
-          try { const q=encodeURIComponent(`${c.address}, ${c.city}, Zeeland, Nederland`); const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=nl`,{headers:{"Accept-Language":"nl"}}); const data=await r.json(); if (data[0]) coords=[parseFloat(data[0].lat),parseFloat(data[0].lon)]; await new Promise(res=>setTimeout(res,300)); } catch {}
-        }
+        else if (c.address&&c.city){ try { const q=encodeURIComponent(`${c.address}, ${c.city}, Zeeland, Nederland`); const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=nl`,{headers:{"Accept-Language":"nl"}}); const data=await r.json(); if (data[0]) coords=[parseFloat(data[0].lat),parseFloat(data[0].lon)]; await new Promise(res=>setTimeout(res,300)); } catch {} }
         if (!coords) coords=CITY_COORDS[c.city]||null;
         if (!coords) continue;
         const icon=L.divIcon({className:"",html:`<div style="background:${c.is_indoor?"#8b5cf6":"#0ea5e9"};width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:14px">${c.is_indoor?"🏠":"☀️"}</div>`,iconSize:[30,30],iconAnchor:[15,15]});
@@ -1082,14 +1167,9 @@ function CourtsMap({courts}:any){
     load();
     return ()=>{ if (instanceRef.current){ instanceRef.current.remove(); instanceRef.current=null; } };
   },[courts]);
-  return (
-    <div style={{borderRadius:14,overflow:"hidden",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,.12)"}}>
-      <div ref={mapRef} style={{height:230,width:"100%",background:"#e2e8f0"}}/>
-    </div>
-  );
+  return <div style={{borderRadius:14,overflow:"hidden",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,.12)"}}><div ref={mapRef} style={{height:230,width:"100%",background:"#e2e8f0"}}/></div>;
 }
 
-// ─── Courts screen ────────────────────────────────────────────────────────────
 function CourtsScreen({courts,matches,getCount,onSuggest}:any){
   return (
     <div style={s.page}><h2 style={s.pageTitle}>Banen in Zeeland</h2>
@@ -1114,11 +1194,9 @@ function CourtsScreen({courts,matches,getCount,onSuggest}:any){
 
 // ─── Friends screen ───────────────────────────────────────────────────────────
 function FriendsScreen({sbUser,toast$,onChat,onProfile}:any){
-  const [friends,setFriends]=useState<any[]>([]);
-  const [pending,setPending]=useState<any[]>([]);
+  const [friends,setFriends]=useState<any[]>([]); const [pending,setPending]=useState<any[]>([]);
   const [search,setSearch]=useState(""); const [results,setResults]=useState<any[]>([]); const [searching,setSearching]=useState(false);
   const [confirmRemove,setConfirmRemove]=useState<string|null>(null);
-
   const loadFriends=useCallback(async()=>{
     if (!sbUser) return;
     const {data:acc}:any=await sb.from("friendships").select("friend_id,profiles!friendships_friend_id_fkey(id,full_name,username,knltb_rating,level,avatar_url)").eq("user_id",sbUser.id).eq("status","accepted");
@@ -1127,33 +1205,15 @@ function FriendsScreen({sbUser,toast$,onChat,onProfile}:any){
     if (pend) setPending(pend.map((r:any)=>({...r.profiles,fid:r.user_id})).filter(Boolean));
   },[sbUser]);
   useEffect(()=>{ loadFriends(); },[loadFriends]);
-
   const doSearch=async()=>{
     if (!search.trim()) return; setSearching(true);
     const {data}:any=await sb.from("profiles").select("id,full_name,username,knltb_rating,level,avatar_url").or(`full_name.ilike.%${search}%,username.ilike.%${search}%`).neq("id",sbUser.id).limit(10);
     if (data) setResults(data); setSearching(false);
   };
-  const sendRequest=async(friendId:string)=>{
-    const {error}:any=await sb.from("friendships").insert({user_id:sbUser.id,friend_id:friendId,status:"pending"});
-    if (error) toast$(error.code==="23505"?"Al een verzoek verstuurd":error.message,"error");
-    else toast$("Vriendschapsverzoek verstuurd! 🤝");
-    setResults([]); setSearch("");
-  };
-  const acceptRequest=async(fromId:string)=>{
-    await sb.from("friendships").update({status:"accepted"}).eq("user_id",fromId).eq("friend_id",sbUser.id);
-    await sb.from("friendships").insert({user_id:sbUser.id,friend_id:fromId,status:"accepted"}).then(()=>{});
-    toast$("Vriend toegevoegd! 🎾"); loadFriends();
-  };
-  const declineRequest=async(fromId:string)=>{
-    await sb.from("friendships").delete().eq("user_id",fromId).eq("friend_id",sbUser.id);
-    toast$("Verzoek afgewezen"); loadFriends();
-  };
-  const removeFriend=async(friendId:string)=>{
-    await sb.from("friendships").delete().eq("user_id",sbUser.id).eq("friend_id",friendId);
-    await sb.from("friendships").delete().eq("user_id",friendId).eq("friend_id",sbUser.id);
-    toast$("Vriend verwijderd"); setConfirmRemove(null); loadFriends();
-  };
-
+  const sendRequest=async(friendId:string)=>{ const {error}:any=await sb.from("friendships").insert({user_id:sbUser.id,friend_id:friendId,status:"pending"}); if (error) toast$(error.code==="23505"?"Al verstuurd":error.message,"error"); else toast$("Vriendschapsverzoek verstuurd! 🤝"); setResults([]); setSearch(""); };
+  const acceptRequest=async(fromId:string)=>{ await sb.from("friendships").update({status:"accepted"}).eq("user_id",fromId).eq("friend_id",sbUser.id); await sb.from("friendships").insert({user_id:sbUser.id,friend_id:fromId,status:"accepted"}).then(()=>{}); toast$("Vriend toegevoegd! 🎾"); loadFriends(); };
+  const declineRequest=async(fromId:string)=>{ await sb.from("friendships").delete().eq("user_id",fromId).eq("friend_id",sbUser.id); toast$("Verzoek afgewezen"); loadFriends(); };
+  const removeFriend=async(friendId:string)=>{ await sb.from("friendships").delete().eq("user_id",sbUser.id).eq("friend_id",friendId); await sb.from("friendships").delete().eq("user_id",friendId).eq("friend_id",sbUser.id); toast$("Vriend verwijderd"); setConfirmRemove(null); loadFriends(); };
   return (
     <div style={s.page}>
       <h2 style={s.pageTitle}>Vrienden</h2>
@@ -1187,37 +1247,33 @@ function FriendsScreen({sbUser,toast$,onChat,onProfile}:any){
         </div>
       )}
       <p style={{...s.filterLabel,marginBottom:8}}>Mijn vrienden ({friends.length})</p>
-      {friends.length===0?(
-        <div style={{...s.emptyState,padding:"28px 0"}}>
-          <Users size={38} color="#cbd5e1"/>
-          <p style={{fontSize:14,color:C.sub,marginTop:8}}>Nog geen vrienden</p>
-          <p style={{fontSize:12,color:C.sub}}>Zoek op naam of gebruikersnaam 👆</p>
-        </div>
-      ):friends.map((fr:any)=>(
-        <div key={fr.id} style={{background:"#fff",borderRadius:12,padding:"10px 12px",marginBottom:8,boxShadow:"0 1px 6px rgba(0,0,0,.06)"}}>
-          {confirmRemove===fr.id?(
-            <div>
-              <p style={{fontSize:13,color:C.dark,fontWeight:700,marginBottom:8}}>{displayName(fr)} verwijderen als vriend?</p>
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>removeFriend(fr.id)} style={{flex:1,padding:"8px",background:"#fee2e2",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer",color:C.red}}>Verwijderen</button>
-                <button onClick={()=>setConfirmRemove(null)} style={{flex:1,padding:"8px",background:"#f1f5f9",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer",color:C.sub}}>Annuleren</button>
+      {friends.length===0?<div style={{...s.emptyState,padding:"28px 0"}}><Users size={38} color="#cbd5e1"/><p style={{fontSize:14,color:C.sub,marginTop:8}}>Nog geen vrienden</p><p style={{fontSize:12,color:C.sub}}>Zoek op naam 👆</p></div>
+        :friends.map((fr:any)=>(
+          <div key={fr.id} style={{background:"#fff",borderRadius:12,padding:"10px 12px",marginBottom:8,boxShadow:"0 1px 6px rgba(0,0,0,.06)"}}>
+            {confirmRemove===fr.id?(
+              <div>
+                <p style={{fontSize:13,color:C.dark,fontWeight:700,marginBottom:8}}>{displayName(fr)} verwijderen als vriend?</p>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>removeFriend(fr.id)} style={{flex:1,padding:"8px",background:"#fee2e2",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer",color:C.red}}>Verwijderen</button>
+                  <button onClick={()=>setConfirmRemove(null)} style={{flex:1,padding:"8px",background:"#f1f5f9",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:"pointer",color:C.sub}}>Annuleren</button>
+                </div>
               </div>
-            </div>
-          ):(
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <div onClick={()=>onProfile(fr.id)} style={{width:42,height:42,borderRadius:"50%",background:C.sea,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#fff",fontWeight:700,overflow:"hidden",flexShrink:0,cursor:"pointer"}}>
-                {fr.avatar_url?<img src={fr.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:initials(fr)}
+            ):(
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div onClick={()=>onProfile(fr.id)} style={{width:42,height:42,borderRadius:"50%",background:C.sea,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#fff",fontWeight:700,overflow:"hidden",flexShrink:0,cursor:"pointer"}}>
+                  {fr.avatar_url?<img src={fr.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:initials(fr)}
+                </div>
+                <div style={{flex:1,cursor:"pointer"}} onClick={()=>onProfile(fr.id)}>
+                  <div style={{fontWeight:700,fontSize:14,color:C.dark}}>{displayName(fr)}</div>
+                  <div style={{fontSize:12,color:C.sub}}>{levelText(fr.level)}{fr.knltb_rating&&` · KNLTB ${fr.knltb_rating}`}</div>
+                </div>
+                <button onClick={()=>onChat(fr.id)} style={{padding:"7px 10px",background:"#e0f2fe",border:"none",borderRadius:8,cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontSize:12,fontWeight:700,color:C.sea}}><MessageSquare size={13}/>Chat</button>
+                <button onClick={()=>setConfirmRemove(fr.id)} style={{padding:"7px 8px",background:"#fee2e2",border:"none",borderRadius:8,cursor:"pointer",display:"flex",alignItems:"center",color:C.red}}><Trash2 size={13}/></button>
               </div>
-              <div style={{flex:1,cursor:"pointer"}} onClick={()=>onProfile(fr.id)}>
-                <div style={{fontWeight:700,fontSize:14,color:C.dark}}>{displayName(fr)}</div>
-                <div style={{fontSize:12,color:C.sub}}>{levelText(fr.level)}{fr.knltb_rating&&` · KNLTB ${fr.knltb_rating}`}</div>
-              </div>
-              <button onClick={()=>onChat(fr.id)} style={{padding:"7px 10px",background:"#e0f2fe",border:"none",borderRadius:8,cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontSize:12,fontWeight:700,color:C.sea}}><MessageSquare size={13}/>Chat</button>
-              <button onClick={()=>setConfirmRemove(fr.id)} style={{padding:"7px 8px",background:"#fee2e2",border:"none",borderRadius:8,cursor:"pointer",display:"flex",alignItems:"center",color:C.red}}><Trash2 size={13}/></button>
-            </div>
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        ))
+      }
     </div>
   );
 }
@@ -1240,7 +1296,7 @@ function ProfileScreen({profile,sbUser,matches,getCount,onOpen,onLogout,onUpdate
       <div style={{textAlign:"center",padding:"4px 0 14px"}}>
         <div style={{position:"relative",display:"inline-block",marginBottom:10}}>
           <div style={s.profileAva}>{profile?.avatar_url?<img src={profile.avatar_url} alt="" style={{width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"}}/>:<span style={{color:"#fff",fontSize:26,fontWeight:800}}>{initials(profile)}</span>}</div>
-          <button onClick={()=>fileRef.current?.click()} disabled={uploading} style={{position:"absolute",bottom:2,right:2,width:28,height:28,borderRadius:"50%",background:C.sea,border:"2px solid #fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{uploading?<div className="spin-sm"/>:<Camera size={12} color="#fff"/>}</button>
+          <button type="button" onClick={()=>fileRef.current?.click()} disabled={uploading} style={{position:"absolute",bottom:2,right:2,width:28,height:28,borderRadius:"50%",background:C.sea,border:"2px solid #fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{uploading?<div className="spin-sm"/>:<Camera size={12} color="#fff"/>}</button>
           <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarChange}/>
         </div>
         <h2 style={{fontSize:20,fontWeight:800,color:C.dark,margin:"0 0 4px"}}>{displayName(profile)}</h2>
@@ -1259,7 +1315,7 @@ function ProfileScreen({profile,sbUser,matches,getCount,onOpen,onLogout,onUpdate
       {editing&&(
         <div style={{...s.formCard,marginBottom:14}}>
           <p style={{fontWeight:800,fontSize:14,color:C.dark}}>Profiel bewerken</p>
-          <label style={s.lbl}>Niveau</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{LEVELS.map((l,i)=><button key={l} onClick={()=>setEL(i+1)} style={{padding:"6px 10px",borderRadius:16,fontSize:11,fontWeight:700,border:"1.5px solid",cursor:"pointer",background:editLevel===(i+1)?C.sea:"#fff",color:editLevel===(i+1)?"#fff":C.dark,borderColor:editLevel===(i+1)?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{LEVEL_LABELS[l]||l}</button>)}</div>
+          <label style={s.lbl}>Niveau</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{LEVELS.map((l,i)=><button key={l} type="button" onClick={()=>setEL(i+1)} style={{padding:"6px 10px",borderRadius:16,fontSize:11,fontWeight:700,border:"1.5px solid",cursor:"pointer",background:editLevel===(i+1)?C.sea:"#fff",color:editLevel===(i+1)?"#fff":C.dark,borderColor:editLevel===(i+1)?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{LEVEL_LABELS[l]||l}</button>)}</div>
           <label style={s.lbl}>KNLTB Rating</label><select className="inp" value={editKnltb} onChange={e=>setEK(e.target.value)}><option value="">Geen / onbekend</option>{KNLTB_RATINGS.map(r=><option key={r} value={r}>{r}</option>)}</select>
           <label style={s.lbl}>Woonplaats</label><select className="inp" value={editLoc} onChange={e=>setELoc(e.target.value)}>{LOCATIONS.map(l=><option key={l}>{l}</option>)}</select>
           <label style={s.lbl}>Bio (optioneel)</label><textarea className="inp" rows={3} placeholder="Vertel iets over jezelf…" value={editBio} onChange={e=>setEB(e.target.value)} style={{resize:"none"}}/>
@@ -1276,14 +1332,14 @@ function ProfileScreen({profile,sbUser,matches,getCount,onOpen,onLogout,onUpdate
       )}
       <div style={s.stats3}>{[{label:"Gehost",value:played.length,Icon:CheckCircle},{label:"Gepland",value:upcoming.length,Icon:Calendar},{label:"KNLTB",value:profile?.knltb_rating||"–",Icon:Trophy}].map(({label,value,Icon}:any)=><div key={label} style={s.statCard}><Icon size={18} color={C.sea}/><span style={{fontSize:18,fontWeight:800,color:C.dark}}>{value}</span><span style={{fontSize:10,color:C.sub}}>{label}</span></div>)}</div>
       <h3 style={{...s.secTitle,marginBottom:8,marginTop:4}}>Aankomende partijtjes als host</h3>
-      {upcoming.length===0?(
-        <div style={{...s.emptyState,padding:"20px 0"}}><Calendar size={28} color="#cbd5e1"/><p style={{fontSize:13,color:C.sub,marginTop:6}}>Geen komende partijtjes als host</p></div>
-      ):upcoming.map((m:any)=>(
-        <div key={m.id} style={{background:"#fff",borderRadius:12,padding:"11px 13px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 2px 8px rgba(0,0,0,.05)",cursor:"pointer"}} onClick={()=>onOpen(m.id)}>
-          <div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,fontSize:14,color:C.dark,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.courts?.name}</div><div style={{fontSize:12,color:C.sub,marginTop:2,display:"flex",alignItems:"center",gap:5}}><Calendar size={11}/>{fmtDate(m.date)}<Clock size={11}/>{m.start_time?.slice(0,5)}</div></div>
-          {m.level&&<div style={{...s.lvlBadge,background:(LEVEL_COLOR[m.level]||C.sub)+"22",color:LEVEL_COLOR[m.level]||C.sub,flexShrink:0}}>{m.level}</div>}
-        </div>
-      ))}
+      {upcoming.length===0?<div style={{...s.emptyState,padding:"20px 0"}}><Calendar size={28} color="#cbd5e1"/><p style={{fontSize:13,color:C.sub,marginTop:6}}>Geen komende partijtjes als host</p></div>
+        :upcoming.map((m:any)=>(
+          <div key={m.id} style={{background:"#fff",borderRadius:12,padding:"11px 13px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 2px 8px rgba(0,0,0,.05)",cursor:"pointer"}} onClick={()=>onOpen(m.id)}>
+            <div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,fontSize:14,color:C.dark,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.courts?.name}</div><div style={{fontSize:12,color:C.sub,marginTop:2,display:"flex",alignItems:"center",gap:5}}><Calendar size={11}/>{fmtDate(m.date)}<Clock size={11}/>{m.start_time?.slice(0,5)}</div></div>
+            {m.level&&<div style={{...s.lvlBadge,background:(LEVEL_COLOR[m.level]||C.sub)+"22",color:LEVEL_COLOR[m.level]||C.sub,flexShrink:0}}>{m.level}</div>}
+          </div>
+        ))
+      }
       <button style={{...s.leaveBtn,marginTop:14,color:C.red,borderColor:"#fecaca",display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={onLogout}><LogOut size={15}/>Uitloggen</button>
     </div>
   );
@@ -1293,17 +1349,22 @@ function Spinner(){ return <div style={{textAlign:"center",padding:"28px 0"}}><d
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s: Record<string,any> = {
+  // BREEDTE FIX: appShell is volledig breed, content is altijd max 430 gecentreerd
   appShell:{fontFamily:"'Nunito',sans-serif",background:C.bg,minHeight:"100dvh",width:"100%",overflowX:"hidden"},
-  mainWrap:{maxWidth:430,margin:"0 auto",paddingTop:70,paddingBottom:80},
-  subRoot:{fontFamily:"'Nunito',sans-serif",background:C.bg,minHeight:"100dvh",maxWidth:430,margin:"0 auto",overflowX:"hidden"},
-  header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))",position:"fixed",top:0,left:0,right:0,zIndex:100,boxShadow:"0 2px 20px rgba(3,105,161,0.3)"},
+  mainWrap:{maxWidth:APP_MAX_W,margin:"0 auto",paddingTop:70,paddingBottom:80},
+  // Header: fixed + full width, content gecentreerd binnen
+  header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:100,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"},
+  // Backheader voor subschermen (ook full width)
+  backHdr:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"sticky",top:0,zIndex:20,boxShadow:"0 2px 10px rgba(3,105,161,0.2)"},
+  backBtn:{background:"none",border:"none",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"},
   ava:{width:36,height:36,borderRadius:"50%",background:"rgba(255,255,255,0.25)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,overflow:"hidden"},
   avaMed:{width:42,height:42,borderRadius:"50%",background:C.sea,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,overflow:"hidden"},
   profileAva:{width:84,height:84,borderRadius:"50%",background:C.sea,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"},
   bellBtn:{background:"none",border:"none",cursor:"pointer",position:"relative",padding:"0 2px",flexShrink:0,display:"flex",alignItems:"center"},
   badge:{position:"absolute",top:-3,right:-3,background:"#ef4444",color:"#fff",fontSize:9,width:16,height:16,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700},
+  // Nav: fixed + full width, content gecentreerd
   nav:{position:"fixed",bottom:0,left:0,right:0,background:"#fff",boxShadow:"0 -2px 20px rgba(0,0,0,0.08)",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)"},
-  navInner:{display:"flex",maxWidth:430,margin:"0 auto"},
+  navInner:{display:"flex",maxWidth:APP_MAX_W,margin:"0 auto"},
   navBtn:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"8px 2px 6px",background:"none",border:"none",cursor:"pointer",gap:3,minWidth:0,overflow:"hidden",position:"relative"},
   navIndicator:{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:24,height:3,background:C.sea,borderRadius:"0 0 4px 4px"},
   navCreate:{width:46,height:46,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px rgba(14,165,233,0.45)",marginTop:-12,marginBottom:2},
@@ -1313,14 +1374,14 @@ const s: Record<string,any> = {
   notifHead:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",borderBottom:"1px solid #e2e8f0"},
   modalCard:{background:"#fff",width:"min(390px,94vw)",maxHeight:"90dvh",overflowY:"auto",margin:"auto",borderRadius:20,padding:"18px 16px",boxShadow:"0 20px 60px rgba(0,0,0,.3)"},
   closeBtn:{background:"none",border:"none",cursor:"pointer",color:C.sub,padding:"0 2px",display:"flex",alignItems:"center"},
+  // Auth
   authWrap:{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",background:"linear-gradient(160deg,#0f172a 0%,#0ea5e9 100%)",position:"relative",overflow:"hidden"},
   authBg:{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle at 30% 20%,rgba(14,165,233,.3) 0%,transparent 50%),radial-gradient(circle at 70% 80%,rgba(8,145,178,.2) 0%,transparent 50%)",pointerEvents:"none"},
   authCard:{background:"rgba(255,255,255,.97)",backdropFilter:"blur(20px)",borderRadius:22,padding:"24px 20px",width:"100%",maxWidth:360,display:"flex",flexDirection:"column" as const,gap:12,boxShadow:"0 24px 64px rgba(0,0,0,.35)",position:"relative"},
   authTitle:{fontSize:22,fontWeight:800,color:C.dark,textAlign:"center" as const,margin:0},
   authSub:{color:C.sub,textAlign:"center" as const,fontSize:13,marginTop:-4},
-  authDivider:{display:"flex",alignItems:"center",gap:10,color:C.sub,fontSize:11,fontWeight:700},
   regLbl:{fontSize:12,fontWeight:700,color:C.dark,display:"block",marginBottom:5},
-  switchTxt:{textAlign:"center" as const,fontSize:13,color:C.sub},
+  // Content
   page:{padding:"14px 14px 0"},
   pageTitle:{fontSize:20,fontWeight:800,color:C.dark,marginBottom:14,letterSpacing:-0.5},
   secTitle:{fontSize:15,fontWeight:700,color:C.dark,margin:0},
@@ -1345,8 +1406,6 @@ const s: Record<string,any> = {
   previewCard:{background:C.bg,borderRadius:10,padding:"11px 12px"},
   courtCard:{background:"#fff",borderRadius:14,padding:"12px 13px",marginBottom:10,display:"flex",alignItems:"center",gap:11,boxShadow:"0 2px 8px rgba(0,0,0,.06)"},
   suggestBtn:{width:"100%",padding:"12px",background:"#fff",border:"1.5px dashed #cbd5e1",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer",color:C.sea,marginTop:4,marginBottom:18,display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"inherit"},
-  backHdr:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))",position:"sticky",top:0,zIndex:20},
-  backBtn:{background:"none",border:"none",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"},
   detailCard:{background:"#fff",borderRadius:14,padding:"14px",marginBottom:12,boxShadow:"0 2px 10px rgba(0,0,0,.07)"},
   detailNote:{fontSize:13,color:C.sub,fontStyle:"italic",background:C.bg,borderRadius:8,padding:"8px 10px"},
   playerRow:{background:"#fff",borderRadius:12,padding:"10px 12px",marginBottom:8,display:"flex",alignItems:"center",gap:10,boxShadow:"0 1px 6px rgba(0,0,0,.05)"},
@@ -1356,32 +1415,19 @@ const s: Record<string,any> = {
   editBtn:{padding:"10px",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",color:C.dark,fontFamily:"inherit"},
 };
 
-// ─── CSS ──────────────────────────────────────────────────────────────────────
 const css=`
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   html,body{height:100%;background:#f0f9ff;overflow-x:hidden;}
   #root{height:100%;}
-
-  /* Flex-gebaseerde auth invoervelden – iconen overlappen NOOIT */
-  .auth-field{
-    display:flex;align-items:center;
-    border:1.5px solid #e2e8f0;border-radius:12px;
-    background:#f8fafc;padding:0 14px;gap:10px;
-    transition:border-color .2s,background .2s;
-  }
-  .auth-field:focus-within{border-color:#0ea5e9;background:#fff;}
-  .auth-bare{
-    flex:1;border:none;background:transparent;outline:none;
-    padding:13px 0;font-size:14px;font-family:inherit;color:#1e293b;min-width:0;
-  }
+  /* Auth invoerveld – flex, nooit overlappend */
+  .auth-field-wrap:focus-within{border-color:#0ea5e9 !important;background:#fff !important;}
+  .auth-bare{flex:1;border:none;background:transparent;outline:none;padding:13px 0;font-size:14px;font-family:inherit;color:#1e293b;min-width:0;}
   .auth-bare::placeholder{color:#94a3b8;}
-
   .inp{width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;background:#fff;outline:none;color:#1e293b;}
   .inp:focus{border-color:#0ea5e9;}
   .inp-sm{padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:inherit;background:#fff;outline:none;color:#1e293b;width:100%;}
   .inp-sm:focus{border-color:#0ea5e9;}
-
   .btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;}
   .btn-primary:disabled{opacity:.45;cursor:not-allowed;}
   .btn-auth{width:100%;padding:13px;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;}
