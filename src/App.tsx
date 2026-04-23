@@ -1357,7 +1357,7 @@ const s: Record<string,any> = {
   appShell:{fontFamily:"'Nunito',sans-serif",background:C.bg,minHeight:"100dvh",width:"100%",overflowX:"hidden"},
   mainWrap:{maxWidth:APP_MAX_W,margin:"0 auto",paddingTop: "calc(95px + env(safe-area-inset-top))",paddingBottom: 100},
   // Header: fixed + full width, content gecentreerd binnen
-  header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:100,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"max(15px + env(safe-area-inset-top))"},
+  header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:1000,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"max(15px + env(safe-area-inset-top))"},
   // Backheader voor subschermen (ook full width)
   backHdr:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"sticky",top:0,zIndex:20,boxShadow:"0 2px 10px rgba(3,105,161,0.2)",paddingTop: "calc(15px + env(safe-area-inset-top))",paddingBottom: "12px"},
   backBtn:{background:"none",border:"none",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"},
