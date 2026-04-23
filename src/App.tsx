@@ -1367,9 +1367,25 @@ const s: Record<string,any> = {
   bellBtn:{background:"none",border:"none",cursor:"pointer",position:"relative",padding:"0 2px",flexShrink:0,display:"flex",alignItems:"center"},
   badge:{position:"absolute",top:-3,right:-3,background:"#ef4444",color:"#fff",fontSize:9,width:16,height:16,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700},
   // Nav: fixed + full width, content gecentreerd
-  nav:{position:"fixed",bottom:0,left:0,right:0,background:"#fff",boxShadow:"0 -2px 20px rgba(0,0,0,0.08)",zIndex:20,paddingBottom:"env(safe-area-inset-bottom)"},
-  navInner:{display:"fixed",maxWidth:APP_MAX_W,margin:"0 auto",height: "60px",alignItems: "center",},
-  navBtn:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"8px 2px 6px",background:"none",border:"none",cursor:"pointer",gap:3,minWidth:0,overflow:"hidden",position:"relative"},
+  nav: {
+    position: "fixed",
+    bottom: 0, // MOET op 0 staan
+    left: 0,
+    right: 0,
+    background: "#fff",
+    boxShadow: "0 -2px 20px rgba(0,0,0,0.08)",
+    zIndex: 100,
+    // Dit zorgt dat de witte balk helemaal naar beneden doorloopt onder het streepje
+    paddingBottom: "env(safe-area-inset-bottom)",
+  },
+  
+  navInner: {
+    display: "flex",
+    maxWidth: APP_MAX_W,
+    margin: "0 auto",
+    height: "65px", // Een vaste hoogte voor de knoppen
+    alignItems: "center",
+  },  navBtn:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"8px 2px 6px",background:"none",border:"none",cursor:"pointer",gap:3,minWidth:0,overflow:"hidden",position:"relative"},
   navIndicator:{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:24,height:3,background:C.sea,borderRadius:"0 0 4px 4px"},
   navCreate:{width:46,height:46,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px rgba(14,165,233,0.45)",marginTop:-12,marginBottom:2},
   navLbl:{fontSize:10,whiteSpace:"nowrap"},
