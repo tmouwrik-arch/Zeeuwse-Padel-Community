@@ -415,10 +415,12 @@ export default function App() {
         {screen==="friends" && <FriendsScreen sbUser={sbUser} toast$={toast$} onChat={(id:string)=>setSubScreen({type:"dm",friendId:id})} onProfile={(id:string)=>setSubScreen({type:"friendProfile",friendId:id})}/>}
         {screen==="profile" && <ProfileScreen profile={profile} sbUser={sbUser} matches={matches} getCount={getCount} onOpen={(id:string)=>setSubScreen({type:"detail",matchId:id})} onLogout={handleLogout} onUpdateProfile={updateProfile} onUploadAvatar={uploadAvatar} toast$={toast$}/>}
       </div>
-      <BottomNav screen={screen} setScreen={setScreen}/>
-      <button className="fab-feedback" onClick={()=>setFeedbackOpen(true)} title="Idee of feedback"><Lightbulb size={18} color="#fff"/></button>
-    </div>
-  );
+      <button style={{position:"fixed",bottom:"calc(30px + env(safe-area-inset-bottom))",left:"50%",transform:"translateX(-50%)",width:56,height:56,borderRadius:"50%",background:screen==="create"?C.seaDark:C.sea,border:"3px solid #fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px rgba(14,165,233,0.45)",zIndex:200}} onClick={()=>setScreen("create")}>
+  <Plus size={20} color="#fff"/>
+</button>
+<BottomNav screen={screen} setScreen={setScreen}/>
+<button className="fab-feedback" onClick={()=>setFeedbackOpen(true)} title="Idee of feedback"><Lightbulb size={18} color="#fff"/></button>
+</div>  );
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
