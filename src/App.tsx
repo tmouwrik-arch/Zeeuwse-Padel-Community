@@ -551,7 +551,7 @@ function AuthSuccess({msg}:any){
 // Flex-gebaseerd invoerveld – icoon kan NOOIT overlappen
 function AF({icon,children,pw,onTogglePw,showPw}:any){
   return (
-<div style={{display:"flex",alignItems:"center",border:"1.5px solid #e2e8f0",borderRadius:12,background:"#f8fafc",padding:"12px 14px",gap:10,transition:"border .2s"}}      onFocus={()=>{}} className="auth-field-wrap">
+<div style={{display:"flex",alignItems:"center",border:"1.5px solid #e2e8f0",borderRadius:12,background:"#f8fafc",padding:"16px 14px",gap:10,transition:"border .2s"}}      onFocus={()=>{}} className="auth-field-wrap">
       <span style={{display:"flex",alignItems:"center",flexShrink:0,color:C.sub}}>{icon}</span>
       {children}
       {pw&&<button type="button" style={{background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",color:C.sub,flexShrink:0}} onClick={onTogglePw}>{showPw?<EyeOff size={16}/>:<Eye size={16}/>}</button>}
@@ -595,9 +595,9 @@ function LoginScreen({onLogin,onSwitch,onForgot}:any){
           <>
             <AuthError msg={err}/>
             <AF icon={<Mail size={18}/>}>
-            <input className="auth-bare" style={{fontSize:"17px", padding:"8px 0", width:"100%"}} placeholder="E-mailadres" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/>            </AF>
+            <input className="auth-bare" style={{fontSize:"14px", padding:"8px 0", width:"100%"}} placeholder="E-mailadres" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/>            </AF>
             <AF icon={<Lock size={18}/>} pw showPw={showPw} onTogglePw={()=>setShowPw(v=>!v)}>
-            <input className="auth-bare" style={{fontSize:"13px", padding:"8px 0", width:"100%"}} placeholder="Wachtwoord" type={showPw?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoComplete="current-password"/>            </AF>
+            <input className="auth-bare" style={{fontSize:"14px", padding:"8px 0", width:"100%"}} placeholder="Wachtwoord" type={showPw?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoComplete="current-password"/>            </AF>
             <div style={{textAlign:"right"}}><span className="link" style={{fontSize:12}} onClick={()=>{setForgot(true);setErr("");}}>Wachtwoord vergeten?</span></div>
             <button className="btn-auth" style={{padding:"10px 0", fontSize:"14px", width:"100%"}} onClick={go} disabled={busy||!email||!pw}>{busy?"Bezig…":"Inloggen"}</button>
             <div style={{textAlign:"center",paddingTop:4,fontSize:13,color:C.sub}}>
@@ -615,8 +615,8 @@ function LoginScreen({onLogin,onSwitch,onForgot}:any){
               ?<AuthSuccess msg="Resetlink verstuurd! Check je inbox 📧"/>
               :(<>
                   <p style={{fontSize:13,color:C.sub}}>Vul je e-mailadres in voor een resetlink.</p>
-                  <AF icon={<Mail size={18}/>}><input className="auth-bare" placeholder="E-mailadres" type="email" value={forgotEmail} onChange={e=>setFE(e.target.value)}/></AF>
-                  <button className="btn-auth" onClick={sendReset} disabled={busy||!forgotEmail}>{busy?"Versturen…":"Resetlink versturen"}</button>
+                  <AF icon={<Mail size={18}/>}><input className="auth-bare" style={{fontSize:"14px", padding:"8px 0", width:"100%"}}placeholder="E-mailadres" type="email" value={forgotEmail} onChange={e=>setFE(e.target.value)}/></AF>
+                  <button className="btn-auth" style={{fontSize:"14px", padding:"8px 0", width:"100%"}}onClick={sendReset} disabled={busy||!forgotEmail}>{busy?"Versturen…":"Resetlink versturen"}</button>
                 </>)
             }
             <p style={{textAlign:"center",fontSize:13,color:C.sub}}><span className="link" onClick={()=>{setForgot(false);setFS(false);setForgotErr("");}}>← Terug naar inloggen</span></p>
@@ -671,7 +671,7 @@ function RegisterScreen({onRegister,onSwitch}:any){
       <div style={s.authCard}>
         <div style={{textAlign:"center"}}>
           <div style={{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 8px",overflow:"hidden",padding:5}}>
-            <img src="/Gemini_Generated_Image_jjvfrsjjvfrsjjvf.png" alt="Logo" style={{width:"100%",height:"100%",objectFit:"contain",filter:"brightness(0) invert(1)"}} onError={(e:any)=>e.target.style.display="none"}/>
+            <img src="/Logo.png" alt="Logo" style={{width:"90%",height:"90%",objectFit:"contain"}} onError={(e:any)=>e.target.style.display="none"}/>
           </div>
           <h1 style={s.authTitle}>Account aanmaken</h1>
           <p style={s.authSub}>Stap {step} van 2</p>
@@ -682,13 +682,13 @@ function RegisterScreen({onRegister,onSwitch}:any){
         <AuthError msg={err}/>
         {step===1?(
           <>
-            <AF icon={<User size={18}/>}><input className="auth-bare" placeholder="Volledige naam" value={f.full_name} onChange={set("full_name")}/></AF>
-            <AF icon={<Mail size={18}/>}><input className="auth-bare" placeholder="E-mailadres" type="email" value={f.email} onChange={set("email")}/></AF>
-            <AF icon={<Lock size={18}/>}><input className="auth-bare" placeholder="Wachtwoord (min. 6 tekens)" type="password" value={f.password} onChange={e=>setF(p=>({...p,password:e.target.value}))}/></AF>
-            <button className="btn-auth" onClick={()=>{ const v=validateStep1(); if(v){setErr(v);return;} setErr(""); setStep(2); }}>
+            <AF icon={<User size={18}/>}><input className="auth-bare" style={{fontSize:"14px", padding:"8px 0",width:"100%"}} placeholder="Volledige naam" value={f.full_name} onChange={set("full_name")}/></AF>
+            <AF icon={<Mail size={18}/>}><input className="auth-bare" style={{fontSize:"14px", padding:"8px 0",width:"100%"}} placeholder="E-mailadres" type="email" value={f.email} onChange={set("email")}/></AF>
+            <AF icon={<Lock size={18}/>}><input className="auth-bare" style={{fontSize:"14px", padding:"8px 0",width:"100%"}} placeholder="Wachtwoord (min. 6 tekens)" type="password" value={f.password} onChange={e=>setF(p=>({...p,password:e.target.value}))}/>
+            </AF><button className="btn-auth" style={{padding:"10px 0", fontSize:"14px", width:"100%"}} onClick={()=>{ const v=validateStep1(); if(v){setErr(v);return;} setErr(""); setStep(2); }}>
               Volgende →
             </button>
-            <div style={{textAlign:"center",fontSize:13,color:C.sub}}>Al een account? <span className="link" onClick={onSwitch}>Inloggen</span></div>
+            <div style={{textAlign:"center",fontSize:14,color:C.sub}}>Al een account? <span className="link" onClick={onSwitch}>Inloggen</span></div>
           </>
         ):(
           <>
@@ -1353,7 +1353,7 @@ const s: Record<string,any> = {
   // Header: fixed + full width, content gecentreerd binnen
   header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:2000,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"calc(15px + env(safe-area-inset-top))"},
   // Backheader voor subschermen (ook full width)
-  backHdr:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"sticky",top:0,zIndex:20,boxShadow:"0 2px 10px rgba(3,105,161,0.2)",paddingTop: "calc(15px + env(safe-area-inset-top))",paddingBottom: "12px"},
+  backHdr:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"sticky",top:0,zIndex:20,boxShadow:"0 2px 10px rgba(3,105,161,0.2)",paddingTop: "env(safe-area-inset-top)",paddingBottom: "12px"},
   backBtn:{background:"none",border:"none",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"},
   ava:{width:36,height:36,borderRadius:"50%",background:"rgba(255,255,255,0.25)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,overflow:"hidden"},
   avaMed:{width:42,height:42,borderRadius:"50%",background:C.sea,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,overflow:"hidden"},
@@ -1434,8 +1434,9 @@ const css=`
   
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 
-  .auth-field-wrap:focus-within{border-color:#0ea5e9 !important;background:#fff !important;}
-  .auth-bare{flex:1;border:none;background:transparent;outline:none;padding:5px 0;font-size:18px;font-family:inherit;color:#1e293b;min-width:0;}
+  .auth-field-wrap{width:100%;}
+  .auth-field-wrap:focus-within{border-color:#0ea5e9 !important;background:#fff !important;} 
+  .auth-bare{flex:1;width:100%;border:none;background:transparent;outline:none;padding:5px 0;font-size:18px;font-family:inherit;color:#1e293b;min-width:0;}
   .auth-bare::placeholder{color:#94a3b8;}
   .inp{width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;background:#fff;outline:none;color:#1e293b;}
   .inp:focus{border-color:#0ea5e9;}
