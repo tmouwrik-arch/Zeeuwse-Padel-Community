@@ -1353,7 +1353,7 @@ const s: Record<string,any> = {
   // Header: fixed + full width, content gecentreerd binnen
   header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:2000,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"calc(15px + env(safe-area-inset-top))"},
   // Backheader voor subschermen (ook full width)
-  backHdr:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"sticky",top:0,zIndex:20,boxShadow:"0 2px 10px rgba(3,105,161,0.2)",paddingTop: "env(safe-area-inset-top)",paddingBottom: "12px"},
+  backHdr:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:20,boxShadow:"0 2px 10px rgba(3,105,161,0.2)",paddingTop: "env(safe-area-inset-top)",paddingBottom: "0px"},
   backBtn:{background:"none",border:"none",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"},
   ava:{width:36,height:36,borderRadius:"50%",background:"rgba(255,255,255,0.25)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,overflow:"hidden"},
   avaMed:{width:42,height:42,borderRadius:"50%",background:C.sea,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,overflow:"hidden"},
