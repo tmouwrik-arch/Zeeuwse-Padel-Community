@@ -245,13 +245,17 @@ export default function App() {
           addNotif("Nieuw bericht in een partijtje","💬",{type:"chat",matchId});
         }
       })
-      .on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages"},(payload:any)=>{
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"direct_messages"},async(payload:any)=>{
         const currentUser = sbUserRef.current;
         if (payload.new?.receiver_id===currentUser?.id){
-          addNotif("Nieuw bericht van een vriend","✉️",{type:"dm",friendId:payload.new?.sender_id});
+          const {data} = await sb.from("profiles")
+            .select("full_name,username")
+            .eq("id", payload.new.sender_id)
+            .single();
+          const name = data?.full_name || data?.username || "Iemand";
+          addNotif(`${name} stuurde je een bericht`,"✉️",{type:"dm",friendId:payload.new?.sender_id});
         }
-      })
-      .subscribe();
+      })      .subscribe();
     return ()=>sb.removeChannel(ch);
   },[fetchAll,addNotif]);
 
