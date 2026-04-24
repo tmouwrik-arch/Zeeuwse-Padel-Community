@@ -1465,9 +1465,8 @@ const css=`
   .auth-field-wrap:focus-within{border-color:#0ea5e9 !important;background:#fff !important;} 
   .auth-bare{flex:1;width:100%;border:none;background:transparent;outline:none;padding:5px 0;font-size:18px;font-family:inherit;color:#1e293b;min-width:0;}
   .auth-bare::placeholder{color:#94a3b8;}
-  .inp{width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;background:#fff;outline:none;color:#1e293b;background-clip:padding-box;}  .inp:focus{border-color:#0ea5e9;}
-  .inp-sm{padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:inherit;background:#fff;outline:none;color:#1e293b;width:100%;background-clip:padding-box;}  .inp-sm:focus{border-color:#0ea5e9;}
-  .btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;}
+  .inp{width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;background:#fff;outline:none;color:#1e293b;background-clip:padding-box;-webkit-appearance:none;appearance:none;} 
+  .inp-sm{padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:inherit;background:#fff;outline:none;color:#1e293b;width:100%;background-clip:padding-box;-webkit-appearance:none;appearance:none;}  .btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;}
   .btn-primary:disabled{opacity:.45;cursor:not-allowed;}
   .btn-auth{width:100%;padding:20px;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;border-radius:14px;font-size:18px;font-weight:800;cursor:pointer;font-family:inherit;}  .btn-auth:disabled{opacity:.4;cursor:not-allowed;}
   .btn-auth-outline{flex:1;padding:13px;background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;font-size:14px;font-weight:700;color:#64748b;cursor:pointer;font-family:inherit;}
@@ -1485,4 +1484,5 @@ const css=`
   .spin-sm{width:12px;height:12px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;}
   .fab-feedback{position:fixed;bottom:calc(75px + env(safe-area-inset-bottom));right:16px;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(245,158,11,.5);z-index:50;}  @keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
   @keyframes spin{to{transform:rotate(360deg)}}
+  input[type="date"], input[type="time"]{-webkit-appearance:none;appearance:none;background-clip:padding-box;border-radius:10px;}
 `;
