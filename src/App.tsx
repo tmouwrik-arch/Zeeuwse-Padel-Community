@@ -865,7 +865,7 @@ function MatchDetailScreen({match:m,sbUser,cnt,onJoin,onLeave,onCancel,onChat,on
     // BREEDTE FIX: zelfde structuur als main app
     <div style={s.appShell}><style>{css}</style>
       <div style={s.backHdr}>
-        <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"}}>
+        <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px"}}>
           <button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button>
           <strong style={{fontSize:15,color:"#fff"}}>Partijtje</strong>
           <div style={{width:70}}/>
