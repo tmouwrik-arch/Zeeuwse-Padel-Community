@@ -102,8 +102,27 @@ const defaultFutureTime = () => {
 
 // ─── Push notifications ───────────────────────────────────────────────────────
 const requestNotifPermission = async () => {
-  if ("Notification" in window && Notification.permission==="default") {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
     await Notification.requestPermission();
+  }
+  if (Notification.permission === "granted") {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) return;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY
+      });
+      const {data:{session}} = await sb.auth.getSession();
+      if (session?.user) {
+        await sb.from("push_subscriptions").upsert({
+          user_id: session.user.id,
+          subscription: sub.toJSON()
+        });
+      }
+    } catch(e) { console.error("Push subscription fout:", e); }
   }
 };
 const sendBrowserNotif = (title:string, body:string, onClick?:()=>void) => {
@@ -176,9 +195,14 @@ export default function App() {
     else if (link.screen) setScreen(link.screen);
   },[]);
 
-  const addNotif = useCallback((text:string, icon="🎾", link?:any) => {
+  const addNotif = useCallback((text:string, icon="🎾", link?:any, targetUserId?:string) => {
     setNotifs(p=>[{id:uid(),text,icon,time:"Nu",read:false,link},...p]);
     sendBrowserNotif("Zeeuwse Padel", text, link?()=>navigate(link):undefined);
+    if (targetUserId) {
+      sb.functions.invoke("send-push", {
+        body: { user_id: targetUserId, title: "Zeeuwse Padel 🎾", body: text }
+      }).catch(console.error);
+    }
   },[navigate]);
 
   useEffect(()=>{
@@ -193,7 +217,13 @@ export default function App() {
   },[]);
 
   useEffect(()=>{ fetchWeather().then(setWeather); },[]);
-
+  useEffect(()=>{
+    if ("serviceWorker" in navigator){
+      navigator.serviceWorker.register("/sw.js")
+        .then(reg => console.log("SW geregistreerd:", reg.scope))
+        .catch(err => console.error("SW fout:", err));
+    }
+  },[]);
   const loadProfile = async (id:string) => {
     const {data}=await sb.from("profiles").select("*").eq("id",id).single();
     if (data){ 
@@ -237,7 +267,8 @@ export default function App() {
             addNotif(
               `Je bent toegevoegd aan een partijtje bij ${data.courts?.name || "een baan"} op ${fmtDate(data.date)}! 🎾`,
               "🎾",
-              {matchId: payload.new.match_id}
+              {matchId: payload.new.match_id},
+              payload.new.user_id
             );
           }
         }
@@ -258,8 +289,7 @@ export default function App() {
             .eq("id", payload.new.sender_id)
             .single();
           const name = data?.full_name || data?.username || "Iemand";
-          addNotif(`${name} stuurde je een bericht`,"✉️",{type:"dm",friendId:payload.new?.sender_id});
-        }
+          addNotif(`${name} stuurde je een bericht`,"✉️",{type:"dm",friendId:payload.new?.sender_id},payload.new.receiver_id);        }
       })      .subscribe();
     return ()=>sb.removeChannel(ch);
   },[fetchAll,addNotif]);
