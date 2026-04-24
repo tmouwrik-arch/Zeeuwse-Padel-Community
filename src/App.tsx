@@ -220,8 +220,25 @@ export default function App() {
   useEffect(()=>{
     const ch=sb.channel("padel-rt-v3")
       .on("postgres_changes",{event:"*",schema:"public",table:"matches"},()=>fetchAll())
-      .on("postgres_changes",{event:"*",schema:"public",table:"participants"},()=>fetchAll())
-      .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},(payload:any)=>{
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"participants"},async(payload:any)=>{
+        fetchAll();
+        const currentUser = sbUserRef.current;
+        if (payload.new?.user_id === currentUser?.id) {
+          const {data} = await sb.from("matches")
+            .select("*, courts(name)")
+            .eq("id", payload.new.match_id)
+            .single();
+          if (data && data.host_id !== currentUser.id) {
+            addNotif(
+              `Je bent toegevoegd aan een partijtje bij ${data.courts?.name || "een baan"} op ${fmtDate(data.date)}! 🎾`,
+              "🎾",
+              {matchId: payload.new.match_id}
+            );
+          }
+        }
+      })
+      .on("postgres_changes",{event:"DELETE",schema:"public",table:"participants"},()=>fetchAll())
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"participants"},()=>fetchAll())      .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},(payload:any)=>{
         const currentUser = sbUserRef.current;
         if (payload.new?.sender_id!==currentUser?.id){
           const matchId = payload.new?.match_id;
