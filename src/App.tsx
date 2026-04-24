@@ -787,8 +787,7 @@ function HomeScreen({matches,loading,setScreen,joinMatch,onOpen,getCount,sbUser,
       </div>
       {loading||lm?<Spinner/>:myUpcoming.length===0?(
         <div style={s.emptyState}><Calendar size={36} color="#cbd5e1"/><p style={{fontSize:14,color:C.sub,marginTop:8}}>Je doet nog nergens aan mee</p><button className="btn-primary" style={{marginTop:12,maxWidth:220}} onClick={()=>setScreen("matches")}>Partijtjes zoeken</button></div>
-      ):myUpcoming.map((m:any)=><MatchCard key={m.id} match={m} sbUser={sbUser} cnt={getCount(m)} onJoin={()=>joinMatch(m.id)} onOpen={()=>onOpen(m.id)} compact/>)}
-      <button className="btn-primary" style={{marginTop:14}} onClick={()=>setScreen("create")}>+ Partijtje aanmaken</button>
+        ):myUpcoming.map((m:any)=><MatchCard key={m.id} match={m} sbUser={sbUser} cnt={getCount(m)} onJoin={()=>joinMatch(m.id)} onOpen={()=>onOpen(m.id)} compact isParticipant={true}/>)}      <button className="btn-primary" style={{marginTop:14}} onClick={()=>setScreen("create")}>+ Partijtje aanmaken</button>
     </div>
   );
 }
@@ -851,8 +850,7 @@ function MyMatchesTab({sbUser,allMatches,getCount,onOpen}:any){
     </div>
   ));
 }
-function MatchCard({match:m,sbUser,cnt,onJoin,onOpen,compact}:any){
-  const lc=LEVEL_COLOR[m.level]||C.sub;
+function MatchCard({match:m,sbUser,cnt,onJoin,onOpen,compact,isParticipant}:any){  const lc=LEVEL_COLOR[m.level]||C.sub;
   return (
     <div style={s.matchCard} onClick={onOpen}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:7}}>
@@ -869,8 +867,7 @@ function MatchCard({match:m,sbUser,cnt,onJoin,onOpen,compact}:any){
           {[0,1,2,3].map(i=><div key={i} style={{...s.slot,...(i<cnt?s.slotFill:s.slotEmpty)}}>{i<cnt&&<Check size={10} color="#fff"/>}</div>)}
           <span style={{fontSize:11,color:C.sub,marginLeft:4}}>{cnt>=4?"Vol":`${4-cnt} vrij`}</span>
         </div>
-        <div onClick={(e:any)=>e.stopPropagation()}>{cnt<4&&<button className="btn-join" onClick={(e:any)=>{e.stopPropagation();onJoin();}}>Meedoen</button>}</div>
-      </div>
+        <div onClick={(e:any)=>e.stopPropagation()}>{cnt<4&&!isParticipant&&<button className="btn-join" onClick={(e:any)=>{e.stopPropagation();onJoin();}}>Meedoen</button>}</div>      </div>
     </div>
   );
 }
