@@ -328,8 +328,12 @@ export default function App() {
     // Uitgenodigde vrienden toevoegen als participant
     if (invitedFriends&&invitedFriends.length>0){
       for (const fid of invitedFriends){
-        await sb.from("participants").insert({match_id:nm.id,user_id:fid}).then(()=>{});
-      }
+        const {error: pErr} = await sb.from("participants")
+          .insert({match_id: nm.id, user_id: fid});
+        if (pErr) {
+          console.error("Vriend toevoegen mislukt:", pErr.message);
+          toast$(`Vriend kon niet worden toegevoegd: ${pErr.message}`, "error");
+        }}
     }
     toast$("Partijtje aangemaakt! 🎾"); addNotif("Jouw partijtje staat online!","🎾",{matchId:nm.id});
     await fetchAll(); setScreen("matches");
