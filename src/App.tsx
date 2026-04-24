@@ -137,6 +137,7 @@ function WeatherIcon({wc,night,size=26}:any) {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
+  const [isAdmin, setIsAdmin] = useState(false);
   const [sbUser,       setSbUser]       = useState<any>(null);
   const [profile,      setProfile]      = useState<any>(null);
   const [authMode,     setAuthMode]     = useState("login");
@@ -195,7 +196,11 @@ export default function App() {
 
   const loadProfile = async (id:string) => {
     const {data}=await sb.from("profiles").select("*").eq("id",id).single();
-    if (data){ setProfile(data); if (!data.level) setNeedsOnboard(true); }
+    if (data){ 
+      setProfile(data); 
+      setIsAdmin(data.is_admin === true);
+      if (!data.level) setNeedsOnboard(true); 
+    }
     else setNeedsOnboard(true);
   };
 
@@ -439,11 +444,12 @@ export default function App() {
         {screen==="courts"  && <CourtsScreen courts={courts} matches={matches} getCount={getCount} onSuggest={()=>setSuggestOpen(true)}/>}
         {screen==="friends" && <FriendsScreen sbUser={sbUser} toast$={toast$} onChat={(id:string)=>setSubScreen({type:"dm",friendId:id})} onProfile={(id:string)=>setSubScreen({type:"friendProfile",friendId:id})}/>}
         {screen==="profile" && <ProfileScreen profile={profile} sbUser={sbUser} matches={matches} getCount={getCount} onOpen={(id:string)=>setSubScreen({type:"detail",matchId:id})} onLogout={handleLogout} onUpdateProfile={updateProfile} onUploadAvatar={uploadAvatar} toast$={toast$}/>}
+        {screen==="admin" && isAdmin && <AdminScreen sbUser={sbUser} matches={matches} courts={courts} toast$={toast$}/>}
       </div>
       <button style={{position:"fixed",bottom:"calc(30px + env(safe-area-inset-bottom))",left:"50%",transform:"translateX(-50%)",width:56,height:56,borderRadius:"50%",background:screen==="create"?C.seaDark:C.sea,border:"3px solid #fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px rgba(14,165,233,0.45)",zIndex:200}} onClick={()=>setScreen("create")}>
   <Plus size={20} color="#fff"/>
 </button>
-<BottomNav screen={screen} setScreen={setScreen}/>
+<BottomNav screen={screen} setScreen={setScreen} isAdmin={isAdmin}/>
 <button className="fab-feedback" onClick={()=>setFeedbackOpen(true)} title="Idee of feedback"><Lightbulb size={18} color="#fff"/></button>
 </div>  );
 }
@@ -545,9 +551,8 @@ function Header({profile,unread,onBell,onProfile}:any){
 }
 
 // ─── Bottom nav ───────────────────────────────────────────────────────────────
-function BottomNav({screen,setScreen}:any){
-  const items=[{id:"home",Icon:Home,label:"Home"},{id:"matches",Icon:Calendar,label:"Partijtjes"},{id:"create",Icon:Plus,label:"Aanmaken"},{id:"courts",Icon:MapPin,label:"Banen"},{id:"friends",Icon:Users,label:"Vrienden"}];
-  return (
+function BottomNav({screen,setScreen,isAdmin}:any){
+    const items=[{id:"home",Icon:Home,label:"Home"},{id:"matches",Icon:Calendar,label:"Partijtjes"},{id:"create",Icon:Plus,label:"Aanmaken"},{id:"courts",Icon:MapPin,label:"Banen"},{id:"friends",Icon:Users,label:"Vrienden"},...(isAdmin?[{id:"admin",Icon:Trophy,label:"Admin"}]:[])];  return (
     <nav style={s.nav}>
       <div style={s.navInner}>
         {items.map(({id,Icon,label})=>{
@@ -1364,7 +1369,151 @@ function ProfileScreen({profile,sbUser,matches,getCount,onOpen,onLogout,onUpdate
     </div>
   );
 }
+function AdminScreen({sbUser,matches,courts,toast$}:any){
+  const [users,setUsers]=useState<any[]>([]);
+  const [feedback,setFeedback]=useState<any[]>([]);
+  const [suggestions,setSuggestions]=useState<any[]>([]);
+  const [tab,setTab]=useState("overzicht");
+  const [loading,setLoading]=useState(true);
 
+  useEffect(()=>{
+    const load=async()=>{
+      setLoading(true);
+      const {data:u}=await sb.from("profiles").select("*").order("created_at",{ascending:false});
+      if (u) setUsers(u);
+      const {data:f}=await sb.from("feedback").select("*,profiles(full_name,username)").order("created_at",{ascending:false});
+      if (f) setFeedback(f);
+      const {data:s}=await sb.from("court_suggestions").select("*,profiles(full_name,username)").order("created_at",{ascending:false});
+      if (s) setSuggestions(s);
+      setLoading(false);
+    };
+    load();
+  },[]);
+
+  const totalMatches=matches.length;
+  const openMatches=matches.filter((m:any)=>m.participants?.[0]?.count<4).length;
+  const deleteFeedback=async(id:string)=>{
+    await sb.from("feedback").delete().eq("id",id);
+    setFeedback(p=>p.filter((f:any)=>f.id!==id));
+    toast$("Feedback verwijderd");
+  };
+  const deleteSuggestion=async(id:string)=>{
+    await sb.from("court_suggestions").delete().eq("id",id);
+    setSuggestions(p=>p.filter((s:any)=>s.id!==id));
+    toast$("Suggestie verwijderd");
+  };
+  const toggleAdmin=async(userId:string,current:boolean)=>{
+    await sb.from("profiles").update({is_admin:!current}).eq("id",userId);
+    setUsers(p=>p.map((u:any)=>u.id===userId?{...u,is_admin:!current}:u));
+    toast$(!current?"Admin toegevoegd":"Admin verwijderd");
+  };
+
+  return (
+    <div style={s.page}>
+      <h2 style={s.pageTitle}>⚙️ Admin Dashboard</h2>
+      <div style={s.tabRow}>
+        {["overzicht","gebruikers","feedback","suggesties"].map(t=>(
+          <button key={t} style={{...s.tabBtn,...(tab===t?s.tabActive:{})}} onClick={()=>setTab(t)}>
+            {t.charAt(0).toUpperCase()+t.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {loading&&<Spinner/>}
+
+      {!loading&&tab==="overzicht"&&(
+        <>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+            {[
+              {label:"Totaal gebruikers",value:users.length,Icon:Users,color:"#8b5cf6"},
+              {label:"Totaal partijtjes",value:totalMatches,Icon:Calendar,color:C.sea},
+              {label:"Open partijtjes",value:openMatches,Icon:CheckCircle,color:C.green},
+              {label:"Banen",value:courts.length,Icon:MapPin,color:"#f59e0b"},
+              {label:"Feedback",value:feedback.length,Icon:MessageSquare,color:"#ef4444"},
+              {label:"Baan suggesties",value:suggestions.length,Icon:Lightbulb,color:"#f59e0b"},
+            ].map((st:any)=>(
+              <div key={st.label} style={{...s.statCard,borderTop:`3px solid ${st.color}`}}>
+                <st.Icon size={18} color={st.color}/>
+                <span style={{fontSize:24,fontWeight:800,color:C.dark}}>{st.value}</span>
+                <span style={{fontSize:11,color:C.sub,fontWeight:600,textAlign:"center"}}>{st.label}</span>
+              </div>
+            ))}
+          </div>
+          <h3 style={{...s.secTitle,marginBottom:8}}>Nieuwste gebruikers</h3>
+          {users.slice(0,5).map((u:any)=>(
+            <div key={u.id} style={{background:"#fff",borderRadius:12,padding:"10px 13px",marginBottom:8,display:"flex",alignItems:"center",gap:10,boxShadow:"0 1px 6px rgba(0,0,0,.06)"}}>
+              <div style={{width:38,height:38,borderRadius:"50%",background:C.sea,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#fff",fontWeight:700,overflow:"hidden",flexShrink:0}}>
+                {u.avatar_url?<img src={u.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:initials(u)}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:13,color:C.dark}}>{displayName(u)}</div>
+                <div style={{fontSize:11,color:C.sub}}>{u.email}</div>
+              </div>
+              {u.is_admin&&<span style={{fontSize:10,background:"#8b5cf622",color:"#8b5cf6",padding:"2px 8px",borderRadius:8,fontWeight:700}}>Admin</span>}
+            </div>
+          ))}
+        </>
+      )}
+
+      {!loading&&tab==="gebruikers"&&(
+        <>
+          <p style={{fontSize:12,color:C.sub,marginBottom:10}}>{users.length} gebruikers totaal</p>
+          {users.map((u:any)=>(
+            <div key={u.id} style={{background:"#fff",borderRadius:12,padding:"10px 13px",marginBottom:8,display:"flex",alignItems:"center",gap:10,boxShadow:"0 1px 6px rgba(0,0,0,.06)"}}>
+              <div style={{width:38,height:38,borderRadius:"50%",background:C.sea,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#fff",fontWeight:700,overflow:"hidden",flexShrink:0}}>
+                {u.avatar_url?<img src={u.avatar_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:initials(u)}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:13,color:C.dark,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayName(u)}</div>
+                <div style={{fontSize:11,color:C.sub,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.email}</div>
+                <div style={{fontSize:11,color:C.sub}}>{levelText(u.level)}{u.location&&` · ${u.location}`}</div>
+              </div>
+              <button onClick={()=>toggleAdmin(u.id,u.is_admin)} style={{padding:"5px 9px",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",border:"1.5px solid",fontFamily:"inherit",background:u.is_admin?"#8b5cf622":"#f1f5f9",color:u.is_admin?"#8b5cf6":C.sub,borderColor:u.is_admin?"#8b5cf6":"#e2e8f0"}}>
+                {u.is_admin?"Admin ✓":"Admin"}
+              </button>
+            </div>
+          ))}
+        </>
+      )}
+
+      {!loading&&tab==="feedback"&&(
+        <>
+          {feedback.length===0&&<div style={s.emptyState}><MessageSquare size={36} color="#cbd5e1"/><p style={{fontSize:14,color:C.sub,marginTop:8}}>Geen feedback</p></div>}
+          {feedback.map((f:any)=>(
+            <div key={f.id} style={{background:"#fff",borderRadius:12,padding:"12px 13px",marginBottom:8,boxShadow:"0 1px 6px rgba(0,0,0,.06)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                <div style={{fontSize:12,fontWeight:700,color:C.sea}}>{f.profiles?displayName(f.profiles):"Anoniem"}</div>
+                <button onClick={()=>deleteFeedback(f.id)} style={{background:"#fee2e2",border:"none",borderRadius:6,padding:"3px 7px",cursor:"pointer",color:C.red,fontSize:11,fontWeight:700}}>Verwijder</button>
+              </div>
+              <p style={{fontSize:13,color:C.dark,lineHeight:1.5}}>{f.message}</p>
+              <div style={{fontSize:11,color:C.sub,marginTop:4}}>{f.created_at?new Date(f.created_at).toLocaleDateString("nl-NL"):""}</div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {!loading&&tab==="suggesties"&&(
+        <>
+          {suggestions.length===0&&<div style={s.emptyState}><MapPin size={36} color="#cbd5e1"/><p style={{fontSize:14,color:C.sub,marginTop:8}}>Geen suggesties</p></div>}
+          {suggestions.map((s:any)=>(
+            <div key={s.id} style={{background:"#fff",borderRadius:12,padding:"12px 13px",marginBottom:8,boxShadow:"0 1px 6px rgba(0,0,0,.06)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                <div style={{fontWeight:700,fontSize:14,color:C.dark}}>{s.name}</div>
+                <button onClick={()=>deleteSuggestion(s.id)} style={{background:"#fee2e2",border:"none",borderRadius:6,padding:"3px 7px",cursor:"pointer",color:C.red,fontSize:11,fontWeight:700}}>Verwijder</button>
+              </div>
+              <div style={{fontSize:12,color:C.sub,display:"flex",flexDirection:"column",gap:3}}>
+                <span><MapPin size={11}/> {s.address?`${s.address}, ${s.city}`:s.city}</span>
+                {s.booking_url&&<span>🔗 {s.booking_url}</span>}
+                {s.note&&<span>📝 {s.note}</span>}
+                <span>Door: {s.profiles?displayName(s.profiles):"Onbekend"}</span>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
 function Spinner(){ return <div style={{textAlign:"center",padding:"28px 0"}}><div className="spinner"/><p style={{color:C.sub,fontSize:12,marginTop:10,fontWeight:600}}>Laden…</p></div>; }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
