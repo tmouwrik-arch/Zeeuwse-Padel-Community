@@ -642,53 +642,80 @@ function LoginScreen({onLogin,onSwitch,onForgot}:any){
     if (msg) setForgotErr(msg); else setFS(true);
     setBusy(false);
   };
+
   return (
-    <div style={s.authWrap}><div style={s.authBg}/>
-      <div style={s.authCard}>
-        <div style={{textAlign:"center"}}>
-          <div style={{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px",boxShadow:"0 8px 24px rgba(14,165,233,.4)",overflow:"hidden",padding:6}}>
-            <img src="/Logo.png" alt="Logo" style={{width:"100%",height:"100%",objectFit:"contain"}}
-              onError={(e:any)=>{ e.target.style.display="none"; }}/>
-          </div>
-          <h1 style={s.authTitle}>Zeeuwse Padel</h1>
-          <p style={s.authSub}>Join The Community 🎾</p>
+    <div style={{minHeight:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 20px",background:"linear-gradient(160deg,#0f172a 0%,#0369a1 60%,#0ea5e9 100%)",position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:-80,right:-80,width:300,height:300,borderRadius:"50%",background:"rgba(14,165,233,0.15)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:-100,left:-60,width:250,height:250,borderRadius:"50%",background:"rgba(3,105,161,0.2)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"40%",left:-40,width:150,height:150,borderRadius:"50%",background:"rgba(14,165,233,0.08)",pointerEvents:"none"}}/>
+
+      <div style={{textAlign:"center",marginBottom:28,position:"relative",zIndex:1}}>
+        <div style={{width:88,height:88,borderRadius:24,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",boxShadow:"0 12px 32px rgba(14,165,233,0.5)",overflow:"hidden",padding:8}}>
+          <img src="/Logo.png" alt="Logo" style={{width:"100%",height:"100%",objectFit:"contain"}} onError={(e:any)=>e.target.style.display="none"}/>
         </div>
+        <h1 style={{fontSize:28,fontWeight:800,color:"#fff",margin:"0 0 4px",letterSpacing:-0.5}}>Zeeuwse Padel</h1>
+        <p style={{color:"rgba(255,255,255,0.65)",fontSize:14,fontWeight:600}}>Join The Community 🎾</p>
+      </div>
+
+      <div style={{background:"rgba(255,255,255,0.97)",borderRadius:24,padding:"28px 22px",width:"100%",maxWidth:420,boxShadow:"0 32px 80px rgba(0,0,0,0.4)",position:"relative",zIndex:1}}>
         {!forgotMode?(
           <>
-            <AuthError msg={err}/>
-            <AF icon={<Mail size={18}/>}>
-            <input className="auth-bare" style={{fontSize:"14px", padding:"8px 0", width:"100%"}} placeholder="E-mailadres" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/>            </AF>
-            <AF icon={<Lock size={18}/>} pw showPw={showPw} onTogglePw={()=>setShowPw(v=>!v)}>
-            <input className="auth-bare" style={{fontSize:"14px", padding:"8px 0", width:"100%"}} placeholder="Wachtwoord" type={showPw?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoComplete="current-password"/>            </AF>
-            <div style={{textAlign:"right"}}><span className="link" style={{fontSize:12}} onClick={()=>{setForgot(true);setErr("");}}>Wachtwoord vergeten?</span></div>
-            <button className="btn-auth" style={{padding:"10px 0", fontSize:"14px", width:"100%"}} onClick={go} disabled={busy||!email||!pw}>{busy?"Bezig…":"Inloggen"}</button>
-            <div style={{textAlign:"center",paddingTop:4,fontSize:13,color:C.sub}}>
-              Nog geen account?{" "}
-              <button onClick={onSwitch} style={{background:"linear-gradient(135deg,#0ea5e9,#0369a1)",color:"#fff",border:"none",borderRadius:10,padding:"7px 14px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginLeft:4}}>
-                Maak account aan →
-              </button>
+            {err&&<div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#991b1b",fontWeight:600,display:"flex",alignItems:"center",gap:8,marginBottom:14}}><AlertTriangle size={15} color="#dc2626"/>{err}</div>}
+
+            <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",border:"1.5px solid #e2e8f0",borderRadius:14,background:"#f8fafc",padding:"14px 16px",gap:10}} className="auth-field-wrap">
+                <Mail size={18} color="#94a3b8"/>
+                <input className="auth-bare" placeholder="E-mailadres" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" style={{fontSize:15,padding:"0",width:"100%"}}/>
+              </div>
+              <div style={{display:"flex",alignItems:"center",border:"1.5px solid #e2e8f0",borderRadius:14,background:"#f8fafc",padding:"14px 16px",gap:10}} className="auth-field-wrap">
+                <Lock size={18} color="#94a3b8"/>
+                <input className="auth-bare" placeholder="Wachtwoord" type={showPw?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoComplete="current-password" style={{fontSize:15,padding:"0",width:"100%"}}/>
+                <button type="button" style={{background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",color:"#94a3b8"}} onClick={()=>setShowPw(v=>!v)}>{showPw?<EyeOff size={17}/>:<Eye size={17}/>}</button>
+              </div>
             </div>
+
+            <div style={{textAlign:"right",marginBottom:18}}>
+              <span className="link" style={{fontSize:13,color:"#64748b",fontWeight:600}} onClick={()=>{setForgot(true);setErr("");}}>Wachtwoord vergeten?</span>
+            </div>
+
+            <button onClick={go} disabled={busy||!email||!pw} style={{width:"100%",padding:"15px",background:(!email||!pw||busy)?"#e2e8f0":"linear-gradient(135deg,#0ea5e9,#0369a1)",color:(!email||!pw||busy)?"#94a3b8":"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:800,cursor:(!email||!pw||busy)?"not-allowed":"pointer",fontFamily:"inherit",transition:"all .2s",boxShadow:(!email||!pw||busy)?"none":"0 6px 20px rgba(14,165,233,0.4)",marginBottom:16}}>
+              {busy?"Bezig…":"Inloggen"}
+            </button>
+
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <div style={{flex:1,height:1,background:"#e2e8f0"}}/>
+              <span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>OF</span>
+              <div style={{flex:1,height:1,background:"#e2e8f0"}}/>
+            </div>
+
+            <button onClick={onSwitch} style={{width:"100%",padding:"14px",background:"#fff",border:"2px solid #0ea5e9",borderRadius:14,fontSize:15,fontWeight:800,cursor:"pointer",color:"#0ea5e9",fontFamily:"inherit"}}>
+              Account aanmaken →
+            </button>
           </>
         ):(
           <>
-            <h3 style={{fontWeight:800,fontSize:15,color:C.dark}}>Wachtwoord vergeten</h3>
-            <AuthError msg={forgotErr}/>
+            <h3 style={{fontWeight:800,fontSize:17,color:C.dark,marginBottom:12,display:"flex",alignItems:"center",gap:8}}><Key size={18} color={C.sea}/>Wachtwoord vergeten</h3>
+            {forgotErr&&<div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#991b1b",fontWeight:600,marginBottom:12}}>{forgotErr}</div>}
             {forgotSent
-              ?<AuthSuccess msg="Resetlink verstuurd! Check je inbox 📧"/>
+              ?<div style={{background:"#dcfce7",border:"1px solid #86efac",borderRadius:12,padding:"12px 14px",fontSize:13,color:"#166534",fontWeight:600,display:"flex",alignItems:"center",gap:8}}><CheckCircle size={15} color="#16a34a"/>Resetlink verstuurd! Check je inbox 📧</div>
               :(<>
-                  <p style={{fontSize:13,color:C.sub}}>Vul je e-mailadres in voor een resetlink.</p>
-                  <AF icon={<Mail size={18}/>}><input className="auth-bare" style={{fontSize:"14px", padding:"8px 0", width:"100%"}}placeholder="E-mailadres" type="email" value={forgotEmail} onChange={e=>setFE(e.target.value)}/></AF>
-                  <button className="btn-auth" style={{fontSize:"14px", padding:"8px 0", width:"100%"}}onClick={sendReset} disabled={busy||!forgotEmail}>{busy?"Versturen…":"Resetlink versturen"}</button>
+                  <p style={{fontSize:13,color:C.sub,marginBottom:12}}>Vul je e-mailadres in en we sturen een resetlink.</p>
+                  <div style={{display:"flex",alignItems:"center",border:"1.5px solid #e2e8f0",borderRadius:14,background:"#f8fafc",padding:"14px 16px",gap:10,marginBottom:14}} className="auth-field-wrap">
+                    <Mail size={18} color="#94a3b8"/>
+                    <input className="auth-bare" placeholder="E-mailadres" type="email" value={forgotEmail} onChange={e=>setFE(e.target.value)} style={{fontSize:15,padding:"0",width:"100%"}}/>
+                  </div>
+                  <button onClick={sendReset} disabled={busy||!forgotEmail} style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#0ea5e9,#0369a1)",color:"#fff",border:"none",borderRadius:14,fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{busy?"Versturen…":"Resetlink versturen"}</button>
                 </>)
             }
-            <p style={{textAlign:"center",fontSize:13,color:C.sub}}><span className="link" onClick={()=>{setForgot(false);setFS(false);setForgotErr("");}}>← Terug naar inloggen</span></p>
+            <p style={{textAlign:"center",fontSize:13,color:C.sub,marginTop:14}}>
+              <span className="link" onClick={()=>{setForgot(false);setFS(false);setForgotErr("");}}>← Terug naar inloggen</span>
+            </p>
           </>
         )}
       </div>
     </div>
   );
 }
-
 // ─── Register screen ──────────────────────────────────────────────────────────
 function RegisterScreen({onRegister,onSwitch}:any){
   const [f,setF]=useState({full_name:"",email:"",password:"",level:"Gemiddeld",location:"Middelburg",knltb_rating:""});
