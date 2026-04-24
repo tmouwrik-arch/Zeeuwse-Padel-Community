@@ -985,8 +985,7 @@ function ChatScreen({match:m,sbUser,onBack,toast$,addNotif}:any){
   return (
     <div style={{...s.appShell,display:"flex",flexDirection:"column",height:"100dvh"}}><style>{css}</style>
       <div style={s.backHdr}>
-        <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"}}>
-          <button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button>
+      <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"14px"}}>          <button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button>
           <div style={{textAlign:"center"}}><strong style={{fontSize:14,color:"#fff"}}>{m.courts?.name}</strong><div style={{fontSize:11,color:"rgba(255,255,255,.6)"}}>{fmtDate(m.date)} · {m.start_time?.slice(0,5)}</div></div>
           <div style={{width:70}}/>
         </div>
@@ -1028,8 +1027,7 @@ function DirectMessageScreen({friendId,sbUser,onBack,toast$}:any){
   return (
     <div style={{...s.appShell,display:"flex",flexDirection:"column",height:"100dvh"}}><style>{css}</style>
       <div style={s.backHdr}>
-        <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"}}>
-          <button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button>
+      <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"14px"}}>          <button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button>
           <div style={{textAlign:"center"}}><strong style={{fontSize:14,color:"#fff"}}>{friend?displayName(friend):"…"}</strong><div style={{fontSize:11,color:"rgba(255,255,255,.6)"}}>Directe chat</div></div>
           <div style={{width:70}}/>
         </div>
@@ -1061,13 +1059,13 @@ function FriendProfileScreen({friendId,sbUser,onBack,onChat,toast$}:any){
       if (mData) setRecentMatches(mData);
     });
   },[friendId]);
-  if (!fr) return <div style={s.appShell}><style>{css}</style><div style={s.backHdr}><div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"}}><button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button><strong style={{color:"#fff"}}>Profiel</strong><div style={{width:70}}/></div></div><Spinner/></div>;
+  if (!fr) return <div style={s.appShell}><style>{css}</style><div style={s.backHdr}>
+    <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"}}><button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button><strong style={{color:"#fff"}}>Profiel</strong><div style={{width:70}}/></div></div><Spinner/></div>;
   const lvl=levelText(fr.level);
   return (
     <div style={s.appShell}><style>{css}</style>
       <div style={s.backHdr}>
-        <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"max(14px,env(safe-area-inset-top))"}}>
-          <button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button>
+      <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",padding:"0 16px 12px",paddingTop:"14px"}}>          <button style={s.backBtn} onClick={onBack}><ArrowLeft size={16}/> Terug</button>
           <strong style={{fontSize:15,color:"#fff"}}>Profiel</strong>
           <div style={{width:70}}/>
         </div>
