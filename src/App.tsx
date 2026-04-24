@@ -1371,7 +1371,7 @@ const s: Record<string,any> = {
     zIndex: 100,
     // Dit zorgt dat de witte balk helemaal naar beneden doorloopt onder het streepje
     paddingBottom: "env(safe-area-inset-bottom)",
-    overflow: "visible"
+    overflow: "visible",
   },
   
   navInner: {
@@ -1380,10 +1380,11 @@ const s: Record<string,any> = {
     margin: "0 auto",
     height: "65px", // Een vaste hoogte voor de knoppen
     alignItems: "center",
-  },  navBtn:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"8px 2px 6px",background:"none",border:"none",cursor:"pointer",gap:3,minWidth:0,overflow:"hidden",position:"relative"},
+    overflow: "visible",
+  },  
+  navBtn:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"8px 2px 6px",background:"none",border:"none",cursor:"pointer",gap:3,minWidth:0,overflow:"hidden",position:"relative"},
   navIndicator:{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:24,height:3,background:C.sea,borderRadius:"0 0 4px 4px"},
-  navCreate:{width:46,height:46,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px rgba(14,165,233,0.45)",marginTop:-12,marginBottom:2},
-  navLbl:{fontSize:10,whiteSpace:"nowrap"},
+  navCreate:{width:46,height:46,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px rgba(14,165,233,0.45)",marginTop:-24,marginBottom:2},  navLbl:{fontSize:10,whiteSpace:"nowrap"},
   overlay:{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:200,display:"flex",alignItems:"flex-start",justifyContent:"flex-end"},
   notifPanel:{background:"#fff",width:"min(300px,90vw)",maxHeight:"80dvh",overflowY:"auto",marginTop:"calc(90px + env(safe-area-inset-top))",marginRight:8,borderRadius:14,boxShadow:"0 8px 30px rgba(0,0,0,.2)"},
   notifHead:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",borderBottom:"1px solid #e2e8f0"},
