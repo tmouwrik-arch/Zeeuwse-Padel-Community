@@ -492,7 +492,7 @@ function Header({profile,unread,onBell,onProfile}:any){
       <div style={{maxWidth:APP_MAX_W,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           {/* Eigen logo afbeelding */}
-<div style={{width: 40, height: 40, borderRadius: 10, overflow: "hidden", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0}}>
+          <div style={{width: 40, height: 40, borderRadius: 10, overflow: "visible", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0}}>
   <img 
     src="/Logo.png" 
     alt="Logo" 
@@ -1351,7 +1351,7 @@ const s: Record<string,any> = {
   appShell:{fontFamily:"'Nunito',sans-serif",background:C.bg,minHeight:"100dvh",width:"100%",overflowX:"hidden"},
   mainWrap:{maxWidth:APP_MAX_W,margin:"0 auto",paddingTop: "calc(70px + env(safe-area-inset-top))",paddingBottom: 100},
   // Header: fixed + full width, content gecentreerd binnen
-  header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:2000,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"calc(15px + env(safe-area-inset-top))"},
+  header:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:2000,boxShadow:"0 2px 20px rgba(3,105,161,0.3)",padding:"0 16px 12px",paddingTop:"calc(15px + env(safe-area-inset-top))",overflow:"visible"},
   // Backheader voor subschermen (ook full width)
   backHdr:{background:"linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)",position:"fixed",top:0,left:0,right:0,zIndex:20,boxShadow:"0 2px 10px rgba(3,105,161,0.2)",paddingTop: "env(safe-area-inset-top)",paddingBottom: "0px"},
   backBtn:{background:"none",border:"none",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"},
@@ -1371,6 +1371,7 @@ const s: Record<string,any> = {
     zIndex: 100,
     // Dit zorgt dat de witte balk helemaal naar beneden doorloopt onder het streepje
     paddingBottom: "env(safe-area-inset-bottom)",
+    overflow: "visible"
   },
   
   navInner: {
