@@ -450,7 +450,7 @@ function FeedbackModal({onClose,onSubmit}:any){
     <div style={{...s.overlay,alignItems:"center",justifyContent:"center"}} onClick={onClose}>
       <div style={s.modalCard} onClick={(e:any)=>e.stopPropagation()}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}><Lightbulb size={20} color={C.sea}/><strong style={{fontSize:16,fontWeight:800,color:C.dark}}>Idee of suggestie</strong></div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}><Lightbulb size={20} color={C.sea}/><strong style={{fontSize:16,fontWeight:800,color:C.dark}}>Heb jij een idee om de app te verbeteren? Vul het hier in.</strong></div>
           <button style={s.closeBtn} onClick={onClose}><X size={18}/></button>
         </div>
         <textarea className="inp" rows={5} placeholder="Jouw idee…" value={msg} onChange={e=>setMsg(e.target.value)} style={{resize:"none",marginBottom:10}}/>
