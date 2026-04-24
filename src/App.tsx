@@ -738,66 +738,95 @@ function RegisterScreen({onRegister,onSwitch}:any){
     try {
       const result = await onRegister(f);
       if (result==="confirm"){ setConfirmed(true); }
-      else if (result==="ok"){ /* auth state change handelt het af */ }
+      else if (result==="ok"){ }
       else { setErr(typeof result==="string"?result:"Er ging iets mis. Probeer opnieuw."); }
     } catch(e:any){ setErr(e.message||"Onbekende fout"); }
     finally { setBusy(false); }
   };
 
   if (confirmed) return (
-    <div style={s.authWrap}><div style={s.authBg}/>
-      <div style={s.authCard}>
-        <div style={{textAlign:"center",fontSize:56,marginBottom:8}}>📧</div>
-        <h2 style={{...s.authTitle,fontSize:20}}>Check je e-mail!</h2>
-        <AuthSuccess msg={`Bevestigingslink verstuurd naar ${f.email}`}/>
-        <p style={{fontSize:13,color:C.sub,textAlign:"center",lineHeight:1.5}}>Klik op de link in je inbox om je account te activeren. Daarna kun je inloggen.</p>
-        <button className="btn-auth" onClick={onSwitch}>Naar inloggen</button>
+    <div style={{minHeight:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 20px",background:"linear-gradient(160deg,#0f172a 0%,#0369a1 60%,#0ea5e9 100%)",position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:-80,right:-80,width:300,height:300,borderRadius:"50%",background:"rgba(14,165,233,0.15)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:-100,left:-60,width:250,height:250,borderRadius:"50%",background:"rgba(3,105,161,0.2)",pointerEvents:"none"}}/>
+      <div style={{background:"rgba(255,255,255,0.97)",borderRadius:24,padding:"36px 22px",width:"100%",maxWidth:420,boxShadow:"0 32px 80px rgba(0,0,0,0.4)",textAlign:"center",position:"relative",zIndex:1}}>
+        <div style={{fontSize:64,marginBottom:12}}>📧</div>
+        <h2 style={{fontSize:22,fontWeight:800,color:C.dark,marginBottom:10}}>Check je e-mail!</h2>
+        <div style={{background:"#dcfce7",border:"1px solid #86efac",borderRadius:12,padding:"12px 14px",fontSize:13,color:"#166534",fontWeight:600,display:"flex",alignItems:"center",gap:8,marginBottom:14}}><CheckCircle size={15} color="#16a34a"/>Bevestigingslink verstuurd naar {f.email}</div>
+        <p style={{fontSize:13,color:C.sub,lineHeight:1.6,marginBottom:20}}>Klik op de link in je inbox om je account te activeren. Daarna kun je inloggen.</p>
+        <button onClick={onSwitch} style={{width:"100%",padding:"15px",background:"linear-gradient(135deg,#0ea5e9,#0369a1)",color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Naar inloggen</button>
       </div>
     </div>
   );
+
   return (
-    <div style={s.authWrap}><div style={s.authBg}/>
-      <div style={s.authCard}>
-        <div style={{textAlign:"center"}}>
-          <div style={{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 8px",overflow:"hidden",padding:5}}>
-            <img src="/Logo.png" alt="Logo" style={{width:"90%",height:"90%",objectFit:"contain"}} onError={(e:any)=>e.target.style.display="none"}/>
-          </div>
-          <h1 style={s.authTitle}>Account aanmaken</h1>
-          <p style={s.authSub}>Stap {step} van 2</p>
+    <div style={{minHeight:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 20px",background:"linear-gradient(160deg,#0f172a 0%,#0369a1 60%,#0ea5e9 100%)",position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:-80,right:-80,width:300,height:300,borderRadius:"50%",background:"rgba(14,165,233,0.15)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:-100,left:-60,width:250,height:250,borderRadius:"50%",background:"rgba(3,105,161,0.2)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"40%",left:-40,width:150,height:150,borderRadius:"50%",background:"rgba(14,165,233,0.08)",pointerEvents:"none"}}/>
+
+      <div style={{textAlign:"center",marginBottom:24,position:"relative",zIndex:1}}>
+        <div style={{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#0369a1,#0ea5e9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",boxShadow:"0 12px 32px rgba(14,165,233,0.5)",overflow:"hidden",padding:6}}>
+          <img src="/Logo.png" alt="Logo" style={{width:"100%",height:"100%",objectFit:"contain"}} onError={(e:any)=>e.target.style.display="none"}/>
         </div>
-        <div style={{display:"flex",gap:6}}>
-          {[1,2].map(i=><div key={i} style={{flex:1,height:4,borderRadius:4,background:i<=step?C.sea:"#e2e8f0",transition:"background .3s"}}/>)}
+        <h1 style={{fontSize:24,fontWeight:800,color:"#fff",margin:"0 0 4px"}}>Account aanmaken</h1>
+        <p style={{color:"rgba(255,255,255,0.65)",fontSize:13,fontWeight:600}}>Stap {step} van 2</p>
+      </div>
+
+      <div style={{background:"rgba(255,255,255,0.97)",borderRadius:24,padding:"28px 22px",width:"100%",maxWidth:420,boxShadow:"0 32px 80px rgba(0,0,0,0.4)",position:"relative",zIndex:1}}>
+        {/* Stap indicator */}
+        <div style={{display:"flex",gap:6,marginBottom:20}}>
+          {[1,2].map(i=><div key={i} style={{flex:1,height:5,borderRadius:4,background:i<=step?"linear-gradient(135deg,#0ea5e9,#0369a1)":"#e2e8f0",transition:"background .3s"}}/>)}
         </div>
-        <AuthError msg={err}/>
+
+        {err&&<div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#991b1b",fontWeight:600,display:"flex",alignItems:"center",gap:8,marginBottom:14}}><AlertTriangle size={15} color="#dc2626"/>{err}</div>}
+
         {step===1?(
           <>
-            <AF icon={<User size={18}/>}><input className="auth-bare" style={{fontSize:"14px", padding:"8px 0",width:"100%"}} placeholder="Volledige naam" value={f.full_name} onChange={set("full_name")}/></AF>
-            <AF icon={<Mail size={18}/>}><input className="auth-bare" style={{fontSize:"14px", padding:"8px 0",width:"100%"}} placeholder="E-mailadres" type="email" value={f.email} onChange={set("email")}/></AF>
-            <AF icon={<Lock size={18}/>}><input className="auth-bare" style={{fontSize:"14px", padding:"8px 0",width:"100%"}} placeholder="Wachtwoord (min. 6 tekens)" type="password" value={f.password} onChange={e=>setF(p=>({...p,password:e.target.value}))}/>
-            </AF><button className="btn-auth" style={{padding:"10px 0", fontSize:"14px", width:"100%"}} onClick={()=>{ const v=validateStep1(); if(v){setErr(v);return;} setErr(""); setStep(2); }}>
+            <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:20}}>
+              <div style={{display:"flex",alignItems:"center",border:"1.5px solid #e2e8f0",borderRadius:14,background:"#f8fafc",padding:"14px 16px",gap:10}} className="auth-field-wrap">
+                <User size={18} color="#94a3b8"/>
+                <input className="auth-bare" placeholder="Volledige naam" value={f.full_name} onChange={set("full_name")} style={{fontSize:15,padding:"0",width:"100%"}}/>
+              </div>
+              <div style={{display:"flex",alignItems:"center",border:"1.5px solid #e2e8f0",borderRadius:14,background:"#f8fafc",padding:"14px 16px",gap:10}} className="auth-field-wrap">
+                <Mail size={18} color="#94a3b8"/>
+                <input className="auth-bare" placeholder="E-mailadres" type="email" value={f.email} onChange={set("email")} style={{fontSize:15,padding:"0",width:"100%"}}/>
+              </div>
+              <div style={{display:"flex",alignItems:"center",border:"1.5px solid #e2e8f0",borderRadius:14,background:"#f8fafc",padding:"14px 16px",gap:10}} className="auth-field-wrap">
+                <Lock size={18} color="#94a3b8"/>
+                <input className="auth-bare" placeholder="Wachtwoord (min. 6 tekens)" type="password" value={f.password} onChange={e=>setF(p=>({...p,password:e.target.value}))} style={{fontSize:15,padding:"0",width:"100%"}}/>
+              </div>
+            </div>
+            <button onClick={()=>{ const v=validateStep1(); if(v){setErr(v);return;} setErr(""); setStep(2); }} style={{width:"100%",padding:"15px",background:"linear-gradient(135deg,#0ea5e9,#0369a1)",color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginBottom:16,boxShadow:"0 6px 20px rgba(14,165,233,0.4)"}}>
               Volgende →
             </button>
-            <div style={{textAlign:"center",fontSize:14,color:C.sub}}>Al een account? <span className="link" onClick={onSwitch}>Inloggen</span></div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <div style={{flex:1,height:1,background:"#e2e8f0"}}/>
+              <span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>OF</span>
+              <div style={{flex:1,height:1,background:"#e2e8f0"}}/>
+            </div>
+            <button onClick={onSwitch} style={{width:"100%",padding:"14px",background:"#fff",border:"2px solid #0ea5e9",borderRadius:14,fontSize:15,fontWeight:800,cursor:"pointer",color:"#0ea5e9",fontFamily:"inherit"}}>
+              Al een account? Inloggen
+            </button>
           </>
         ):(
           <>
-            <div>
-              <label style={s.regLbl}>Speelniveau</label>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:4}}>
-                {LEVELS.map(l=><button key={l} type="button" onClick={()=>setF(p=>({...p,level:l}))} style={{padding:"7px 10px",borderRadius:20,fontSize:12,fontWeight:700,border:"2px solid",cursor:"pointer",background:f.level===l?C.sea:"#fff",color:f.level===l?"#fff":C.dark,borderColor:f.level===l?C.sea:"#e2e8f0",fontFamily:"inherit"}}>{LEVEL_LABELS[l]||l}</button>)}
+            <div style={{marginBottom:16}}>
+              <label style={{fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:.5,display:"block",marginBottom:8}}>Speelniveau</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {LEVELS.map(l=><button key={l} type="button" onClick={()=>setF(p=>({...p,level:l}))} style={{padding:"8px 12px",borderRadius:20,fontSize:12,fontWeight:700,border:"2px solid",cursor:"pointer",background:f.level===l?C.sea:"#fff",color:f.level===l?"#fff":C.dark,borderColor:f.level===l?C.sea:"#e2e8f0",fontFamily:"inherit",transition:"all .15s"}}>{LEVEL_LABELS[l]||l}</button>)}
               </div>
             </div>
-            <div>
-              <label style={s.regLbl}>KNLTB Rating <span style={{color:C.sub,fontWeight:400}}>(optioneel)</span></label>
+            <div style={{marginBottom:16}}>
+              <label style={{fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:.5,display:"block",marginBottom:8}}>KNLTB Rating <span style={{color:C.sub,fontWeight:400,textTransform:"none"}}>(optioneel)</span></label>
               <select className="inp" value={f.knltb_rating} onChange={set("knltb_rating")}><option value="">Geen / onbekend</option>{KNLTB_RATINGS.map(r=><option key={r} value={r}>{r}</option>)}</select>
             </div>
-            <div>
-              <label style={s.regLbl}>Woonplaats</label>
+            <div style={{marginBottom:20}}>
+              <label style={{fontSize:12,fontWeight:700,color:C.sub,textTransform:"uppercase",letterSpacing:.5,display:"block",marginBottom:8}}>Woonplaats</label>
               <select className="inp" value={f.location} onChange={set("location")}>{LOCATIONS.map(l=><option key={l}>{l}</option>)}</select>
             </div>
-            <div style={{display:"flex",gap:8}}>
-              <button type="button" className="btn-auth-outline" onClick={()=>{ setStep(1); setErr(""); }}>← Terug</button>
-              <button type="button" className="btn-auth" style={{flex:2}} onClick={go} disabled={busy}>{busy?"Aanmaken…":"Account aanmaken ✓"}</button>
+            <div style={{display:"flex",gap:10}}>
+              <button type="button" onClick={()=>{setStep(1);setErr("");}} style={{flex:1,padding:"14px",background:"#fff",border:"2px solid #e2e8f0",borderRadius:14,fontSize:14,fontWeight:700,color:C.sub,cursor:"pointer",fontFamily:"inherit"}}>← Terug</button>
+              <button type="button" onClick={go} disabled={busy} style={{flex:2,padding:"14px",background:busy?"#e2e8f0":"linear-gradient(135deg,#0ea5e9,#0369a1)",color:busy?"#94a3b8":"#fff",border:"none",borderRadius:14,fontSize:15,fontWeight:800,cursor:busy?"not-allowed":"pointer",fontFamily:"inherit",boxShadow:busy?"none":"0 6px 20px rgba(14,165,233,0.4)"}}>{busy?"Aanmaken…":"Account aanmaken ✓"}</button>
             </div>
           </>
         )}
@@ -805,7 +834,6 @@ function RegisterScreen({onRegister,onSwitch}:any){
     </div>
   );
 }
-
 // ─── Onboard ──────────────────────────────────────────────────────────────────
 function OnboardScreen({onOnboard}:any){
   const [f,setF]=useState({level:"Gemiddeld",location:"Middelburg",knltb_rating:""});
